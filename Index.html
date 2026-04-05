@@ -1,0 +1,2309 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bibliothèque Génération Leader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.fedapay.com/checkout.js?v=1.1.7"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+/* ═══════════════════════════════════════════
+   VARIABLES
+═══════════════════════════════════════════ */
+:root {
+  --navy-deep:   #0C0C1A;
+  --navy-mid:    #14142A;
+  --navy-card:   #16162E;
+  --navy-hover:  #1c1c38;
+  --gold:        #C9A84C;
+  --gold-vivid:  #F0B429;
+  --gold-light:  #DFC278;
+  --gold-dim:    rgba(201,168,76,0.12);
+  --gold-border: rgba(201,168,76,0.25);
+  --white:       #F5F0E8;
+  --white-dim:   rgba(245,240,232,0.55);
+  --white-faint: rgba(245,240,232,0.06);
+  --text:        #DDD8CC;
+  --text-dim:    rgba(221,216,204,0.45);
+  --error:       #f87171;
+  --success:     #4ade80;
+  --radius-sm:   3px;
+  --radius:      6px;
+  --radius-lg:   14px;
+  --ease:        cubic-bezier(0.4,0,0.2,1);
+  --transition:  0.3s var(--ease);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;font-size:16px;}
+body{font-family:'DM Sans',sans-serif;background:var(--navy-deep);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4,h5{font-family:'Cormorant Garamond',serif;line-height:1.1;}
+button{font-family:inherit;cursor:pointer;}
+a{text-decoration:none;color:inherit;}
+
+/* GRAIN */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.3;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");}
+
+/* AMBIENT */
+.bg-ambient{position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 70% 50% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 70%),radial-gradient(ellipse 50% 40% at 90% 90%,rgba(201,168,76,0.04) 0%,transparent 60%);}
+
+/* ÉCRANS */
+.screen{display:none;}
+.screen.active{display:block;}
+
+/* ═══════════════════════════════════════════
+   HEADER PUBLIC
+═══════════════════════════════════════════ */
+.header{position:fixed;top:0;left:0;right:0;z-index:100;height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(12,12,26,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--gold-border);}
+.header::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,var(--gold) 30%,var(--gold-vivid) 50%,var(--gold) 70%,transparent);opacity:0.6;}
+.logo{display:flex;flex-direction:column;cursor:pointer;user-select:none;}
+.logo-main{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:700;color:var(--white);letter-spacing:0.04em;line-height:1;}
+.logo-main em{font-style:italic;color:var(--gold);}
+.logo-sub{font-size:0.62rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--text-dim);margin-top:3px;}
+.nav{display:flex;align-items:center;gap:10px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 22px;border-radius:var(--radius-sm);font-size:0.78rem;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;transition:var(--transition);border:none;outline:none;white-space:nowrap;}
+.btn-ghost{background:transparent;color:var(--white-dim);border:1px solid var(--gold-border);}
+.btn-ghost:hover{color:var(--gold-light);border-color:var(--gold);background:var(--gold-dim);}
+.btn-gold{background:var(--gold);color:var(--navy-deep);font-weight:700;border:1px solid transparent;}
+.btn-gold:hover{background:var(--gold-vivid);transform:translateY(-1px);box-shadow:0 4px 20px rgba(240,180,41,0.3);}
+.nav-divider{width:1px;height:20px;background:var(--gold-border);margin:0 4px;}
+
+/* MAIN PUBLIC */
+.main{position:relative;z-index:1;padding-top:72px;}
+
+/* HERO */
+.hero{position:relative;min-height:calc(100vh - 72px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 40px 60px;overflow:hidden;}
+.hero-vline{position:absolute;top:0;left:50%;transform:translateX(-50%);width:1px;height:100px;background:linear-gradient(to bottom,var(--gold),transparent);opacity:0.5;}
+.hero-circle{position:absolute;border-radius:50%;border:1px solid var(--gold-border);pointer-events:none;}
+.hero-circle-1{width:600px;height:600px;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.06;animation:slowSpin 40s linear infinite;}
+.hero-circle-2{width:400px;height:400px;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.08;animation:slowSpin 28s linear infinite reverse;}
+@keyframes slowSpin{from{transform:translate(-50%,-50%) rotate(0deg);}to{transform:translate(-50%,-50%) rotate(360deg);}}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 20px;border:1px solid var(--gold-border);border-radius:100px;font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);background:var(--gold-dim);margin-bottom:36px;animation:fadeDown 0.7s var(--ease) both;}
+.hero-badge-dot{width:5px;height:5px;border-radius:50%;background:var(--gold-vivid);animation:blink 2s infinite;}
+.hero-title{font-size:clamp(3.2rem,7vw,6rem);font-weight:700;color:var(--white);margin-bottom:16px;animation:fadeUp 0.8s var(--ease) 0.15s both;}
+.hero-title em{font-style:italic;color:var(--gold);}
+.hero-title .block2{display:block;font-size:0.55em;font-weight:400;font-style:italic;color:var(--white-dim);margin-top:10px;}
+.hero-sub{max-width:500px;font-size:1.02rem;color:var(--text-dim);line-height:1.8;margin:0 auto 52px;animation:fadeUp 0.8s var(--ease) 0.3s both;}
+.hero-sub strong{color:var(--gold-light);font-weight:500;}
+.hero-actions{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;animation:fadeUp 0.8s var(--ease) 0.45s both;}
+.btn-hero{padding:16px 40px;border-radius:var(--radius-sm);font-size:0.82rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;transition:var(--transition);border:none;}
+.btn-hero-gold{background:var(--gold);color:var(--navy-deep);}
+.btn-hero-gold:hover{background:var(--gold-vivid);transform:translateY(-2px);box-shadow:0 10px 36px rgba(240,180,41,0.38);}
+.btn-hero-outline{background:transparent;color:var(--white-dim);border:1px solid var(--gold-border)!important;}
+.btn-hero-outline:hover{color:var(--gold-light);border-color:var(--gold)!important;background:var(--gold-dim);}
+.hero-scroll{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);animation:fadeUp 1s var(--ease) 1s both;}
+.scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,var(--gold),transparent);opacity:0.5;animation:scrollPulse 2s ease-in-out infinite;}
+@keyframes scrollPulse{0%,100%{transform:scaleY(1);opacity:0.5;}50%{transform:scaleY(0.6);opacity:0.2;}}
+
+/* STATS, SECTION, BOOKS, PLANS, FOOTER — identiques étape 5 */
+.stats-bar{display:flex;justify-content:center;flex-wrap:wrap;border-top:1px solid var(--gold-border);border-bottom:1px solid var(--gold-border);background:rgba(201,168,76,0.025);}
+.stat-item{flex:1;min-width:150px;padding:36px 24px;text-align:center;border-right:1px solid var(--gold-border);transition:var(--transition);}
+.stat-item:last-child{border-right:none;}
+.stat-item:hover{background:var(--gold-dim);}
+.stat-num{display:block;font-family:'Cormorant Garamond',serif;font-size:2.8rem;font-weight:700;color:var(--gold);line-height:1;}
+.stat-label{display:block;margin-top:8px;font-size:0.68rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-dim);}
+.section{max-width:1180px;margin:0 auto;padding:80px 40px;}
+.section-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:52px;gap:20px;flex-wrap:wrap;}
+.section-eyebrow{font-size:0.68rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:block;}
+.section-title{font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:700;color:var(--white);}
+.section-title em{font-style:italic;color:var(--gold);}
+.section-cta{font-size:0.75rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);background:none;border:none;border-bottom:1px solid var(--gold-border);padding-bottom:3px;cursor:pointer;transition:var(--transition);}
+.section-cta:hover{border-color:var(--gold);}
+.books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:32px;}
+.book-card{cursor:pointer;transition:transform 0.35s var(--ease);}
+.book-card:hover{transform:translateY(-8px);}
+.book-card:hover .book-cover-inner{box-shadow:0 24px 56px rgba(0,0,0,0.6),0 0 0 1px var(--gold);}
+.book-card:hover .book-lock{opacity:1;transform:translateY(0);}
+.book-card:hover .book-overlay{opacity:1;}
+.book-cover-wrap{aspect-ratio:2/3;position:relative;margin-bottom:18px;border-radius:var(--radius-sm);overflow:hidden;}
+.book-cover-inner{width:100%;height:100%;background:var(--navy-card);border:1px solid var(--gold-border);border-radius:var(--radius-sm);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 18px;text-align:center;transition:box-shadow 0.35s var(--ease);position:relative;overflow:hidden;}
+.book-cover-inner::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,0.06) 0%,transparent 60%),repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(201,168,76,0.015) 20px,rgba(201,168,76,0.015) 21px);}
+.book-icon-wrap{width:52px;height:52px;border:1px solid var(--gold-border);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;background:var(--gold-dim);position:relative;z-index:1;}
+.book-icon{font-size:1.4rem;}
+.book-cover-title{font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-weight:700;color:var(--gold-light);line-height:1.3;position:relative;z-index:1;}
+.book-cover-author{font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-dim);margin-top:10px;position:relative;z-index:1;}
+.book-overlay{position:absolute;inset:0;background:rgba(12,12,26,0.6);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s var(--ease);z-index:2;}
+.book-lock{position:absolute;top:10px;right:10px;background:rgba(12,12,26,0.92);border:1px solid var(--gold-border);border-radius:100px;padding:4px 12px;font-size:0.62rem;letter-spacing:0.12em;color:var(--gold);text-transform:uppercase;z-index:3;opacity:0.7;transform:translateY(-4px);transition:opacity 0.3s var(--ease),transform 0.3s var(--ease);}
+.book-number{position:absolute;bottom:10px;left:12px;font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:700;color:rgba(201,168,76,0.06);line-height:1;z-index:0;user-select:none;}
+.book-info{padding:0 2px;}
+.book-title{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:700;color:var(--white);line-height:1.25;margin-bottom:6px;}
+.book-desc{font-size:0.76rem;color:var(--text-dim);line-height:1.55;}
+.book-tag{display:inline-block;margin-top:10px;padding:3px 10px;border:1px solid var(--gold-border);border-radius:100px;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);}
+.cta-banner{margin:0 40px 80px;max-width:1100px;margin-left:auto;margin-right:auto;border:1px solid var(--gold-border);border-radius:var(--radius-lg);padding:52px 60px;background:linear-gradient(135deg,rgba(201,168,76,0.07) 0%,transparent 60%);display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap;position:relative;overflow:hidden;}
+.cta-banner::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent);opacity:0.5;}
+.cta-banner-left{flex:1;min-width:260px;}
+.cta-banner-eyebrow{font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:block;}
+.cta-banner-title{font-size:clamp(1.5rem,3vw,2rem);font-weight:700;color:var(--white);line-height:1.2;margin-bottom:12px;}
+.cta-banner-title em{color:var(--gold);font-style:italic;}
+.cta-banner-desc{font-size:0.85rem;color:var(--text-dim);line-height:1.7;}
+.plans-section{position:relative;padding:100px 40px;overflow:hidden;}
+.plans-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(201,168,76,0.04) 0%,transparent 70%);pointer-events:none;}
+.plans-inner{max-width:1100px;margin:0 auto;position:relative;z-index:1;}
+.plans-header{text-align:center;margin-bottom:56px;}
+.plans-header-desc{font-size:0.9rem;color:var(--text-dim);line-height:1.7;max-width:480px;margin:0 auto 36px;}
+.plans-toggle{display:inline-flex;align-items:center;background:var(--navy-mid);border:1px solid var(--gold-border);border-radius:100px;padding:4px;}
+.toggle-btn{padding:8px 24px;border-radius:100px;font-size:0.75rem;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;border:none;background:transparent;color:var(--text-dim);transition:var(--transition);}
+.toggle-btn.active{background:var(--gold);color:var(--navy-deep);font-weight:700;}
+.toggle-save{display:inline-block;margin-left:10px;padding:3px 10px;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);border-radius:100px;font-size:0.62rem;color:var(--success);letter-spacing:0.1em;text-transform:uppercase;vertical-align:middle;}
+.plans-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-top:52px;}
+.plan-card{position:relative;border:1px solid var(--gold-border);border-radius:var(--radius-lg);padding:36px 28px 32px;background:var(--white-faint);transition:transform 0.35s var(--ease),border-color 0.3s,box-shadow 0.35s var(--ease);display:flex;flex-direction:column;}
+.plan-card:hover{transform:translateY(-6px);border-color:var(--gold);box-shadow:0 20px 48px rgba(0,0,0,0.4);}
+.plan-card.featured{border-color:var(--gold);background:linear-gradient(160deg,rgba(201,168,76,0.1) 0%,rgba(12,12,26,0.4) 100%);}
+.plan-popular{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--navy-deep);font-size:0.62rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:4px 16px;border-radius:100px;white-space:nowrap;}
+.plan-icon{width:44px;height:44px;border:1px solid var(--gold-border);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:1.2rem;background:var(--gold-dim);margin-bottom:20px;}
+.plan-name{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;color:var(--white);margin-bottom:6px;}
+.plan-price-wrap{display:flex;align-items:baseline;gap:6px;margin:16px 0 6px;}
+.plan-price{font-family:'Cormorant Garamond',serif;font-size:2.6rem;font-weight:700;color:var(--gold);line-height:1;}
+.plan-currency{font-size:0.85rem;color:var(--text-dim);}
+.plan-period{font-size:0.78rem;color:var(--text-dim);}
+.plan-price-annual{font-size:0.72rem;color:var(--text-dim);margin-bottom:6px;min-height:18px;}
+.plan-price-annual .save{color:var(--success);}
+.plan-desc{font-size:0.8rem;color:var(--text-dim);line-height:1.65;margin-bottom:24px;flex:1;}
+.plan-divider{height:1px;background:var(--gold-border);margin-bottom:20px;}
+.plan-features{list-style:none;margin-bottom:28px;}
+.plan-features li{display:flex;align-items:flex-start;gap:10px;font-size:0.8rem;color:var(--text);padding:6px 0;border-bottom:1px solid rgba(201,168,76,0.08);line-height:1.5;}
+.plan-features li:last-child{border-bottom:none;}
+.feat-check{width:16px;height:16px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--gold-border);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:0.6rem;color:var(--gold);}
+.btn-plan{width:100%;padding:14px;border-radius:var(--radius-sm);font-size:0.78rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;transition:var(--transition);border:1px solid var(--gold);background:transparent;color:var(--gold);margin-top:auto;}
+.btn-plan:hover,.plan-card.featured .btn-plan{background:var(--gold);color:var(--navy-deep);}
+.plans-trust{display:flex;align-items:center;justify-content:center;gap:24px;margin-top:40px;flex-wrap:wrap;}
+.trust-item{display:flex;align-items:center;gap:8px;font-size:0.75rem;color:var(--text-dim);}
+.footer{position:relative;border-top:1px solid var(--gold-border);background:var(--navy-mid);padding:64px 40px 32px;overflow:hidden;}
+.footer::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent);opacity:0.4;}
+.footer-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:56px;}
+.footer-logo{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;color:var(--white);margin-bottom:4px;}
+.footer-logo em{color:var(--gold);font-style:italic;}
+.footer-tagline{font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-dim);margin-bottom:20px;}
+.footer-desc{font-size:0.8rem;color:var(--text-dim);line-height:1.75;max-width:280px;margin-bottom:28px;}
+.social-links{display:flex;gap:10px;}
+.social-btn{width:36px;height:36px;border:1px solid var(--gold-border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--text-dim);transition:var(--transition);background:transparent;}
+.social-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
+.footer-col-title{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:var(--white);margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid var(--gold-border);}
+.footer-links{list-style:none;}
+.footer-links li{margin-bottom:10px;}
+.footer-links a{font-size:0.8rem;color:var(--text-dim);transition:var(--transition);cursor:pointer;}
+.footer-links a:hover{color:var(--gold);}
+.footer-bottom{max-width:1100px;margin:0 auto;padding-top:24px;border-top:1px solid rgba(201,168,76,0.1);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.footer-copy{font-size:0.72rem;color:var(--text-dim);line-height:1.6;}
+.footer-copy strong{color:var(--gold-light);}
+.footer-legal{display:flex;gap:20px;}
+.footer-legal a{font-size:0.7rem;color:var(--text-dim);cursor:pointer;transition:var(--transition);}
+.footer-legal a:hover{color:var(--gold);}
+.footer-security{display:flex;align-items:center;gap:8px;font-size:0.7rem;color:var(--text-dim);}
+
+/* BIBLIOTHÈQUE */
+.lib-header{position:fixed;top:0;left:0;right:0;z-index:100;height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(12,12,26,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--gold-border);}
+.lib-header::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,var(--gold) 30%,var(--gold-vivid) 50%,var(--gold) 70%,transparent);opacity:0.6;}
+.lib-header-left{display:flex;align-items:center;gap:28px;}
+.lib-header-right{display:flex;align-items:center;gap:12px;}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--gold-border);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:var(--gold);}
+.sub-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:100px;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);}
+.sub-dot{width:5px;height:5px;border-radius:50%;background:var(--success);animation:blink 2s infinite;}
+.lib-content{position:relative;z-index:1;padding:100px 48px 60px;max-width:1200px;margin:0 auto;}
+.lib-welcome{margin-bottom:48px;animation:fadeUp 0.6s var(--ease) both;}
+.lib-welcome-time{font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
+.lib-welcome-title{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;color:var(--white);}
+.lib-welcome-title em{color:var(--gold);font-style:italic;}
+.lib-welcome-sub{font-size:0.85rem;color:var(--text-dim);margin-top:8px;line-height:1.6;}
+.lib-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:52px;animation:fadeUp 0.6s var(--ease) 0.1s both;}
+.lib-stat-card{background:var(--navy-card);border:1px solid var(--gold-border);border-radius:var(--radius-lg);padding:24px 20px;transition:var(--transition);}
+.lib-stat-card:hover{border-color:var(--gold);background:var(--navy-hover);}
+.lib-stat-icon{font-size:1.4rem;margin-bottom:12px;display:block;}
+.lib-stat-val{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--gold);line-height:1;display:block;}
+.lib-stat-lbl{font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin-top:6px;display:block;}
+.lib-filters{display:flex;gap:8px;margin-bottom:32px;flex-wrap:wrap;animation:fadeUp 0.6s var(--ease) 0.15s both;}
+.filter-pill{padding:7px 18px;border-radius:100px;font-size:0.75rem;letter-spacing:0.08em;border:1px solid var(--gold-border);background:transparent;color:var(--text-dim);transition:var(--transition);}
+.filter-pill.active,.filter-pill:hover{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+.lib-books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:28px;animation:fadeUp 0.6s var(--ease) 0.2s both;}
+.lib-book-card{background:var(--navy-card);border:1px solid var(--gold-border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:transform 0.35s var(--ease),border-color 0.3s,box-shadow 0.35s var(--ease);}
+.lib-book-card:hover{transform:translateY(-6px);border-color:var(--gold);box-shadow:0 20px 48px rgba(0,0,0,0.5);}
+.lib-book-cover{aspect-ratio:16/9;background:var(--navy-mid);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border-bottom:1px solid var(--gold-border);}
+.lib-book-cover::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,0.08) 0%,transparent 60%),repeating-linear-gradient(45deg,transparent,transparent 16px,rgba(201,168,76,0.02) 16px,rgba(201,168,76,0.02) 17px);}
+.lib-book-emoji{font-size:2.2rem;position:relative;z-index:1;}
+.lib-book-num{position:absolute;bottom:8px;right:12px;font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;color:rgba(201,168,76,0.08);line-height:1;user-select:none;}
+.lib-book-badge{position:absolute;top:10px;left:10px;padding:3px 10px;border-radius:100px;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;z-index:2;}
+.badge-reading{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.3);color:var(--success);}
+.badge-new{background:var(--gold-dim);border:1px solid var(--gold-border);color:var(--gold);}
+.badge-done{background:rgba(148,163,184,0.1);border:1px solid rgba(148,163,184,0.2);color:rgba(148,163,184,0.7);}
+.lib-book-body{padding:18px 16px;}
+.lib-book-title{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:var(--white);line-height:1.25;margin-bottom:6px;}
+.lib-book-desc{font-size:0.74rem;color:var(--text-dim);line-height:1.5;margin-bottom:14px;}
+.prog-wrap{margin-bottom:14px;}
+.prog-top{display:flex;justify-content:space-between;font-size:0.68rem;color:var(--text-dim);margin-bottom:6px;letter-spacing:0.06em;}
+.prog-top span:last-child{color:var(--gold);}
+.prog-bar{height:3px;background:rgba(255,255,255,0.08);border-radius:100px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:100px;background:linear-gradient(to right,var(--gold),var(--gold-vivid));transition:width 0.8s var(--ease);}
+.btn-read{width:100%;padding:11px;border-radius:var(--radius-sm);font-size:0.75rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;transition:var(--transition);border:none;}
+.btn-read-primary{background:var(--gold);color:var(--navy-deep);}
+.btn-read-primary:hover{background:var(--gold-vivid);box-shadow:0 4px 16px rgba(201,168,76,0.3);}
+.btn-read-secondary{background:transparent;color:var(--text-dim);border:1px solid var(--gold-border);}
+.btn-read-secondary:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
+.lib-section-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;color:var(--white);margin-bottom:24px;display:flex;align-items:center;gap:12px;}
+.lib-section-title::after{content:'';flex:1;height:1px;background:var(--gold-border);}
+.lib-section-title em{color:var(--gold);font-style:italic;}
+.last-read{background:var(--navy-card);border:1px solid var(--gold);border-radius:var(--radius-lg);padding:28px 32px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:52px;position:relative;overflow:hidden;animation:fadeUp 0.6s var(--ease) 0.05s both;}
+.last-read::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent);opacity:0.7;}
+.last-read-icon{width:60px;height:60px;border:1px solid var(--gold-border);border-radius:var(--radius);background:var(--navy-mid);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;}
+.last-read-body{flex:1;min-width:200px;}
+.last-read-label{font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;display:block;}
+.last-read-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;color:var(--white);margin-bottom:4px;}
+.last-read-page{font-size:0.78rem;color:var(--text-dim);margin-bottom:12px;}
+
+/* MODAUX */
+.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(6,6,18,0.88);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.3s var(--ease);}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{position:relative;width:100%;max-width:480px;background:var(--navy-mid);border:1px solid var(--gold-border);border-radius:var(--radius-lg);padding:44px 40px 40px;transform:translateY(20px) scale(0.97);transition:transform 0.35s var(--ease);max-height:90vh;overflow-y:auto;}
+.modal-overlay.open .modal{transform:translateY(0) scale(1);}
+.modal::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:55%;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent);}
+.modal-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;border:1px solid var(--gold-border);background:var(--white-faint);color:var(--text-dim);font-size:1rem;display:flex;align-items:center;justify-content:center;transition:var(--transition);}
+.modal-close:hover{border-color:var(--gold);color:var(--white);background:var(--gold-dim);}
+.auth-icon{width:56px;height:56px;border-radius:50%;border:1px solid var(--gold-border);background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 20px;}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:700;color:var(--white);text-align:center;margin-bottom:6px;}
+.modal-sub{font-size:0.82rem;color:var(--text-dim);text-align:center;line-height:1.65;margin-bottom:28px;}
+.auth-tabs{display:flex;background:rgba(255,255,255,0.04);border:1px solid var(--gold-border);border-radius:var(--radius-sm);padding:3px;margin-bottom:28px;}
+.auth-tab{flex:1;padding:9px;border-radius:var(--radius-sm);font-size:0.75rem;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;border:none;background:transparent;color:var(--text-dim);transition:var(--transition);}
+.auth-tab.active{background:var(--gold);color:var(--navy-deep);font-weight:700;}
+.form-group{margin-bottom:18px;}
+.form-label{display:block;font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
+.form-input{width:100%;padding:13px 16px;background:rgba(255,255,255,0.04);border:1px solid var(--gold-border);border-radius:var(--radius-sm);color:var(--white);font-family:'DM Sans',sans-serif;font-size:0.9rem;outline:none;transition:var(--transition);}
+.form-input:focus{border-color:var(--gold);background:var(--gold-dim);}
+.form-input::placeholder{color:var(--text-dim);}
+.form-input.error{border-color:var(--error);}
+.form-error{font-size:0.72rem;color:var(--error);margin-top:5px;display:none;}
+.form-error.show{display:block;}
+.btn-modal-primary{width:100%;padding:15px;background:var(--gold);color:var(--navy-deep);border:none;border-radius:var(--radius-sm);font-size:0.82rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;transition:var(--transition);margin-top:8px;}
+.btn-modal-primary:hover{background:var(--gold-vivid);transform:translateY(-1px);box-shadow:0 6px 24px rgba(201,168,76,0.3);}
+.btn-modal-primary:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+.modal-note{text-align:center;font-size:0.74rem;color:var(--text-dim);margin-top:18px;line-height:1.6;}
+.modal-note span{color:var(--gold);cursor:pointer;}
+.pay-recap{background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:var(--radius);padding:18px 20px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.pay-recap-left{display:flex;align-items:center;gap:12px;}
+.pay-recap-icon{width:40px;height:40px;border:1px solid var(--gold-border);border-radius:var(--radius-sm);background:var(--navy-mid);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.pay-recap-name{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:700;color:var(--white);}
+.pay-recap-period{font-size:0.72rem;color:var(--text-dim);margin-top:2px;}
+.pay-recap-price{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;color:var(--gold);}
+.pay-recap-currency{font-size:0.78rem;color:var(--text-dim);}
+.pay-steps{display:flex;margin-bottom:28px;border:1px solid var(--gold-border);border-radius:var(--radius-sm);overflow:hidden;}
+.pay-step{flex:1;padding:10px 8px;text-align:center;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);border-right:1px solid var(--gold-border);transition:var(--transition);}
+.pay-step:last-child{border-right:none;}
+.pay-step.active{background:var(--gold-dim);color:var(--gold);font-weight:600;}
+.pay-step.done{color:var(--success);}
+.pay-step-num{display:block;font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;margin-bottom:2px;}
+.fedapay-note{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid var(--gold-border);border-radius:var(--radius-sm);margin-top:16px;font-size:0.75rem;color:var(--text-dim);line-height:1.5;}
+
+/* ═══════════════════════════════════════════
+   VISIONNEUR DE LECTURE — ÉCRAN 3
+═══════════════════════════════════════════ */
+
+/* Topbar visionneur */
+.reader-topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(8, 8, 18, 0.97);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--gold-border);
+}
+.reader-topbar::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold) 20%, var(--gold-vivid) 50%, var(--gold) 80%, transparent);
+  opacity: 0.5;
+}
+
+/* Gauche topbar */
+.reader-left { display: flex; align-items: center; gap: 16px; }
+.reader-back {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px;
+  border: 1px solid var(--gold-border);
+  border-radius: var(--radius-sm);
+  background: transparent; color: var(--text-dim);
+  font-size: 0.75rem; letter-spacing: 0.08em;
+  text-transform: uppercase; transition: var(--transition);
+}
+.reader-back:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+.reader-book-info {}
+.reader-book-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem; font-weight: 700; color: var(--white);
+  line-height: 1;
+}
+.reader-book-author {
+  font-size: 0.65rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* Centre topbar — progression */
+.reader-center {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  flex: 1; max-width: 400px; margin: 0 32px;
+}
+.reader-progress-bar {
+  width: 100%; height: 2px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 100px; overflow: hidden;
+}
+.reader-progress-fill {
+  height: 100%; border-radius: 100px;
+  background: linear-gradient(to right, var(--gold), var(--gold-vivid));
+  transition: width 0.5s var(--ease);
+}
+.reader-page-info {
+  font-size: 0.68rem; letter-spacing: 0.12em;
+  color: var(--text-dim); text-align: center;
+}
+.reader-page-info span { color: var(--gold); }
+
+/* Droite topbar */
+.reader-right { display: flex; align-items: center; gap: 8px; }
+.reader-ctrl {
+  width: 34px; height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gold-border);
+  background: transparent; color: var(--text-dim);
+  font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.reader-ctrl:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+.reader-ctrl.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+
+/* Corps du visionneur */
+.reader-body {
+  display: flex; height: 100vh; padding-top: 64px;
+}
+
+/* Sidebar table des matières */
+.reader-sidebar {
+  width: 280px; flex-shrink: 0;
+  background: var(--navy-mid);
+  border-right: 1px solid var(--gold-border);
+  overflow-y: auto;
+  transition: transform 0.35s var(--ease);
+  display: flex; flex-direction: column;
+}
+.reader-sidebar.collapsed {
+  transform: translateX(-100%);
+  position: absolute; z-index: 10; height: calc(100vh - 64px);
+}
+
+.sidebar-header {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid var(--gold-border);
+  flex-shrink: 0;
+}
+.sidebar-title {
+  font-size: 0.65rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--gold);
+  margin-bottom: 4px; display: block;
+}
+.sidebar-book {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.95rem; font-weight: 700; color: var(--white);
+  line-height: 1.3;
+}
+
+/* Chapitres */
+.sidebar-chapters { padding: 12px 0; flex: 1; overflow-y: auto; }
+.chapter-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: var(--transition);
+  border-left: 2px solid transparent;
+}
+.chapter-item:hover { background: var(--gold-dim); }
+.chapter-item.active {
+  background: var(--gold-dim);
+  border-left-color: var(--gold);
+}
+.chapter-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem; font-weight: 700; color: var(--gold);
+  flex-shrink: 0; line-height: 1.2;
+  min-width: 24px;
+}
+.chapter-title {
+  font-size: 0.78rem; color: var(--text);
+  line-height: 1.45; flex: 1;
+}
+.chapter-item.active .chapter-title { color: var(--white); }
+.chapter-pages {
+  font-size: 0.65rem; color: var(--text-dim);
+  margin-top: 3px; display: block;
+}
+
+/* Zone de lecture */
+.reader-main {
+  flex: 1; overflow-y: auto;
+  background: #0a0a16;
+  display: flex; flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 120px;
+}
+
+/* Page du livre */
+.book-page {
+  width: 100%; max-width: 720px;
+  background: #FDFAF4;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(201,168,76,0.1);
+  position: relative;
+  overflow: hidden;
+  animation: pageFlip 0.4s var(--ease);
+
+  /* SÉCURITÉ — désactiver sélection et interactions */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+@keyframes pageFlip {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* En-tête de page */
+.page-header {
+  padding: 32px 60px 20px;
+  border-bottom: 1px solid rgba(201,168,76,0.15);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.page-header-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.78rem; font-weight: 600;
+  color: #888; letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.page-header-num {
+  font-size: 0.72rem; color: #aaa; letter-spacing: 0.08em;
+}
+
+/* Contenu de la page */
+.page-body {
+  padding: 44px 60px 40px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.08rem; color: #1a1a2e;
+  line-height: 1.9;
+  min-height: 520px;
+  position: relative;
+}
+
+/* Lettre capitale initiale */
+.page-body.has-dropcap p:first-of-type::first-letter {
+  font-size: 4.2em; font-weight: 700;
+  float: left; line-height: 0.8;
+  margin-right: 10px; margin-top: 8px;
+  color: #C9A84C;
+}
+
+.page-body h2 {
+  font-size: 1.6rem; font-weight: 700;
+  color: #0C0C1A; margin-bottom: 24px;
+  line-height: 1.2;
+}
+.page-body h3 {
+  font-size: 1.1rem; font-weight: 600;
+  color: #1A1A2E; margin-bottom: 16px;
+  margin-top: 32px; letter-spacing: 0.02em;
+}
+.page-body p { margin-bottom: 20px; }
+.page-body p:last-child { margin-bottom: 0; }
+.page-body blockquote {
+  border-left: 3px solid #C9A84C;
+  padding: 12px 24px;
+  margin: 24px 0;
+  background: rgba(201,168,76,0.06);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-style: italic; color: #333;
+}
+.page-body strong { color: #0C0C1A; font-weight: 700; }
+
+/* Watermark discret */
+.page-watermark {
+  position: absolute;
+  bottom: 20px; left: 50%; transform: translateX(-50%) rotate(-15deg);
+  font-size: 0.6rem; letter-spacing: 0.4em;
+  color: rgba(0,0,0,0.035);
+  text-transform: uppercase; white-space: nowrap;
+  pointer-events: none; user-select: none;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Pied de page */
+.page-footer {
+  padding: 16px 60px;
+  border-top: 1px solid rgba(201,168,76,0.12);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.page-footer-book {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.72rem; color: #bbb; font-style: italic;
+}
+.page-footer-num {
+  font-size: 0.72rem; color: #bbb; letter-spacing: 0.06em;
+}
+
+/* Navigation bas de page */
+.reader-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 72px;
+  background: rgba(8, 8, 18, 0.97);
+  border-top: 1px solid var(--gold-border);
+  backdrop-filter: blur(20px);
+  display: flex; align-items: center; justify-content: center;
+  gap: 20px; z-index: 150;
+}
+
+.nav-arrow {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--gold-border);
+  background: var(--navy-mid);
+  color: var(--gold); font-size: 1.3rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition); cursor: pointer;
+}
+.nav-arrow:hover:not(:disabled) {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  transform: scale(1.08);
+  box-shadow: 0 0 20px rgba(201,168,76,0.2);
+}
+.nav-arrow:disabled { opacity: 0.2; cursor: not-allowed; transform: none; }
+
+.nav-center {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+}
+.nav-page-input {
+  width: 56px;
+  background: transparent; border: none;
+  border-bottom: 1px solid var(--gold-border);
+  color: var(--gold);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem; font-weight: 700;
+  text-align: center; outline: none;
+  transition: var(--transition);
+}
+.nav-page-input:focus { border-color: var(--gold); }
+.nav-total { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.1em; }
+
+/* Hint clavier */
+.keyboard-hint {
+  position: fixed; bottom: 84px; right: 24px;
+  font-size: 0.68rem; color: var(--text-dim);
+  letter-spacing: 0.06em;
+  display: flex; gap: 12px; align-items: center;
+  opacity: 0; animation: fadeHint 4s ease 1s forwards;
+}
+@keyframes fadeHint {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.key-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 8px;
+  border: 1px solid var(--gold-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.65rem; color: var(--gold);
+  background: var(--gold-dim);
+}
+
+/* TOASTS */
+.toast-wrap{position:fixed;bottom:86px;right:28px;z-index:10000;display:flex;flex-direction:column;gap:10px;align-items:flex-end;}
+.toast{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--navy-mid);border:1px solid var(--gold-border);border-radius:var(--radius);font-size:0.82rem;color:var(--text);max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.5);transform:translateX(120%);transition:transform 0.4s var(--ease);}
+.toast.show{transform:translateX(0);}
+.toast.toast-success{border-color:rgba(74,222,128,0.4);}
+.toast.toast-error{border-color:rgba(248,113,113,0.4);}
+.toast-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.toast-success .toast-dot{background:var(--success);}
+.toast-error .toast-dot{background:var(--error);}
+.toast-default .toast-dot{background:var(--gold);}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-16px);}to{opacity:1;transform:translateY(0);}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.reveal{opacity:0;transform:translateY(32px);transition:opacity 0.7s var(--ease),transform 0.7s var(--ease);}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+/* ═══════════════════════════════════════════
+   ONGLETS BIBLIOTHÈQUE
+═══════════════════════════════════════════ */
+.lib-tabs {
+  display: flex; gap: 6px; margin-bottom: 36px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--gold-border);
+  padding-bottom: 0;
+}
+.lib-tab {
+  padding: 10px 22px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  font-size: 0.78rem; font-weight: 500;
+  letter-spacing: 0.08em;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: transparent;
+  color: var(--text-dim);
+  transition: var(--transition);
+  position: relative; bottom: -1px;
+}
+.lib-tab:hover { color: var(--gold); background: var(--gold-dim); }
+.lib-tab.active {
+  background: var(--navy-card);
+  border-color: var(--gold-border);
+  border-bottom-color: var(--navy-card);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════
+   PODCASTS
+═══════════════════════════════════════════ */
+.podcast-coming-soon {
+  background: var(--navy-card);
+  border: 1px solid var(--gold-border);
+  border-radius: var(--radius-lg);
+  padding: 48px 40px;
+  text-align: center;
+  margin-bottom: 40px;
+  position: relative; overflow: hidden;
+}
+.podcast-coming-soon::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+}
+.pcs-icon { font-size: 3rem; margin-bottom: 16px; display: block; }
+.pcs-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.6rem; font-weight: 700; color: var(--white);
+  margin-bottom: 12px;
+}
+.pcs-desc {
+  font-size: 0.88rem; color: var(--text-dim); line-height: 1.75;
+  max-width: 480px; margin: 0 auto 24px;
+}
+.pcs-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 24px;
+  background: var(--gold-dim); border: 1px solid var(--gold-border);
+  border-radius: 100px; font-size: 0.78rem; color: var(--gold);
+}
+.podcasts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 20px; }
+.podcast-card {
+  background: var(--navy-card); border: 1px solid var(--gold-border);
+  border-radius: var(--radius-lg); padding: 24px 20px;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: var(--transition);
+  position: relative; overflow: hidden;
+}
+.podcast-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(to right, transparent, var(--gold-border), transparent);
+}
+.podcast-card:hover { border-color: var(--gold); transform: translateY(-4px); }
+.podcast-card-top { display: flex; align-items: center; gap: 14px; }
+.podcast-num-wrap {
+  width: 48px; height: 48px; flex-shrink: 0;
+  background: var(--gold-dim); border: 1px solid var(--gold-border);
+  border-radius: var(--radius); display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+}
+.podcast-meta { flex: 1; }
+.podcast-ep-num {
+  font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold); display: block; margin-bottom: 4px;
+}
+.podcast-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.98rem; font-weight: 700; color: var(--white);
+  line-height: 1.3;
+}
+.podcast-desc { font-size: 0.76rem; color: var(--text-dim); line-height: 1.55; }
+.podcast-footer { display: flex; align-items: center; justify-content: space-between; }
+.podcast-duration {
+  font-size: 0.7rem; color: var(--text-dim);
+  display: flex; align-items: center; gap: 6px;
+}
+.podcast-soon-badge {
+  padding: 4px 12px; background: var(--navy-mid); border: 1px solid var(--gold-border);
+  border-radius: 100px; font-size: 0.65rem; color: var(--text-dim);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════
+   COACHING PANEL
+═══════════════════════════════════════════ */
+.coaching-hero {
+  background: linear-gradient(135deg, rgba(201,168,76,0.1) 0%, var(--navy-card) 60%);
+  border: 1px solid var(--gold); border-radius: var(--radius-lg);
+  padding: 36px 40px; margin-bottom: 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap;
+  position: relative; overflow: hidden;
+}
+.coaching-hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+}
+.coaching-hero-left {}
+.coaching-hero-label {
+  font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 8px; display: block;
+}
+.coaching-hero-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem; font-weight: 700; color: var(--white);
+  margin-bottom: 6px; line-height: 1.2;
+}
+.coaching-hero-sub { font-size: 0.82rem; color: var(--text-dim); line-height: 1.6; }
+.coaching-counter {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: var(--navy-mid); border: 1px solid var(--gold-border);
+  border-radius: var(--radius-lg); padding: 20px 32px; text-align: center;
+  flex-shrink: 0;
+}
+.coaching-counter-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 3rem; font-weight: 700; color: var(--gold); line-height: 1;
+}
+.coaching-counter-lbl { font-size: 0.68rem; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+.coaching-btn-wrap { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+.btn-coaching-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 32px; background: var(--gold); color: var(--navy-deep);
+  border: none; border-radius: var(--radius-sm);
+  font-size: 0.82rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  transition: var(--transition);
+}
+.btn-coaching-primary:hover { background: var(--gold-vivid); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.3); }
+.btn-coaching-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.coaching-upgrade {
+  background: var(--navy-card); border: 1px solid var(--gold-border);
+  border-radius: var(--radius-lg); padding: 40px;
+  text-align: center;
+}
+.coaching-upgrade-icon { font-size: 2.4rem; margin-bottom: 16px; display: block; }
+.coaching-upgrade-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem; font-weight: 700; color: var(--white); margin-bottom: 10px;
+}
+.coaching-upgrade-desc { font-size: 0.84rem; color: var(--text-dim); line-height: 1.7; margin-bottom: 24px; max-width: 400px; margin-left: auto; margin-right: auto; }
+
+/* ═══════════════════════════════════════════
+   COMMUNAUTÉ PANEL
+═══════════════════════════════════════════ */
+.community-hero {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08) 0%, var(--navy-card) 70%);
+  border: 1px solid var(--gold-border); border-radius: var(--radius-lg);
+  padding: 48px 40px; text-align: center;
+  position: relative; overflow: hidden; margin-bottom: 28px;
+}
+.community-hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+}
+.community-icon { font-size: 3rem; margin-bottom: 20px; display: block; }
+.community-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.8rem; font-weight: 700; color: var(--white);
+  margin-bottom: 12px;
+}
+.community-title em { color: var(--gold); font-style: italic; }
+.community-desc {
+  font-size: 0.88rem; color: var(--text-dim); line-height: 1.75;
+  max-width: 480px; margin: 0 auto 32px;
+}
+.btn-community {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 16px 36px; background: #25D366; color: #fff;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  transition: var(--transition);
+}
+.btn-community:hover { background: #20c55e; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,211,102,0.3); }
+.community-upgrade {
+  background: var(--navy-card); border: 1px solid var(--gold-border);
+  border-radius: var(--radius-lg); padding: 48px 40px; text-align: center;
+}
+.community-upgrade-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem; font-weight: 700; color: var(--white); margin-bottom: 12px; margin-top: 16px;
+}
+.community-upgrade-desc {
+  font-size: 0.85rem; color: var(--text-dim); line-height: 1.7;
+  max-width: 400px; margin: 0 auto 28px;
+}
+
+/* toggle plans section — plus besoin */
+.plans-toggle { display: none !important; }
+.toggle-save { display: none !important; }
+
+@media(max-width:768px){
+  .coaching-hero { flex-direction: column; padding: 24px 20px; }
+  .community-hero { padding: 32px 20px; }
+  .podcast-coming-soon { padding: 32px 20px; }
+  .lib-tabs { gap: 4px; }
+  .lib-tab { padding: 8px 14px; font-size: 0.72rem; }
+}
+@media(max-width:480px){
+  .podcasts-grid { grid-template-columns: 1fr; }
+  .coaching-hero { text-align: center; }
+  .coaching-counter { width: 100%; }
+}
+@media(max-width:768px){
+  .header,.lib-header{padding:0 20px;height:64px;}
+  .logo-main{font-size:1.1rem;}
+  .nav-divider{display:none;}
+  .btn{padding:8px 16px;font-size:0.72rem;}
+  .hero{padding:60px 20px 80px;}
+  .section{padding:60px 20px;}
+  .stat-item{padding:28px 16px;min-width:120px;}
+  .cta-banner{padding:36px 24px;margin:0 20px 60px;}
+  .books-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:20px;}
+  .plans-section{padding:72px 20px;}
+  .plans-grid{grid-template-columns:1fr 1fr;gap:16px;}
+  .footer{padding:48px 20px 24px;}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:28px;}
+  .lib-content{padding:88px 20px 40px;}
+  .lib-stats{grid-template-columns:repeat(2,1fr);}
+  .lib-books-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;}
+  .last-read{padding:20px;}
+  .modal{padding:32px 24px 28px;}
+  .reader-sidebar{width:240px;}
+  .page-body{padding:32px 32px 28px;}
+  .page-header,.page-footer{padding:20px 32px;}
+  .reader-topbar{padding:0 16px;}
+  .reader-center{display:none;}
+}
+@media(max-width:480px){
+  .hero-title{font-size:2.4rem;}
+  .books-grid{grid-template-columns:repeat(2,1fr);gap:16px;}
+  .plans-grid{grid-template-columns:1fr;}
+  .footer-grid{grid-template-columns:1fr;}
+  .footer-bottom{flex-direction:column;align-items:flex-start;}
+  .reader-sidebar{display:none;}
+  .page-body{padding:24px 20px;}
+  .page-header,.page-footer{padding:14px 20px;}
+}
+</style>
+</head>
+
+<body>
+<div class="bg-ambient"></div>
+
+<!-- ══════════════════════════════════════════
+     ÉCRAN 1 — PAGE PUBLIQUE
+══════════════════════════════════════════ -->
+<div class="screen active" id="screen-public">
+  <header class="header">
+    <div class="logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+      <span class="logo-main">Bibliothèque <em>Génération Leader</em></span>
+      <span class="logo-sub">par Michel Boglo</span>
+    </div>
+    <nav class="nav">
+      <button class="btn btn-ghost" onclick="openAuth('login')">Se connecter</button>
+      <div class="nav-divider"></div>
+      <button class="btn btn-gold" onclick="document.getElementById('forfaits').scrollIntoView({behavior:'smooth'})">✦ Accès lecteur</button>
+    </nav>
+  </header>
+  <main class="main">
+    <section class="hero">
+      <div class="hero-circle hero-circle-1"></div>
+      <div class="hero-circle hero-circle-2"></div>
+      <div class="hero-vline"></div>
+      <div class="hero-badge"><span class="hero-badge-dot"></span>La bibliothèque de l'autorité</div>
+      <h1 class="hero-title">Lis. <em>Transforme.</em><br/>Domine ton domaine.<span class="block2">5 ouvrages pour construire ton autorité — par Michel Boglo.</span></h1>
+      <p class="hero-sub">Une bibliothèque numérique pensée pour les professionnels francophones qui veulent passer de <strong>compétents</strong> à <strong>reconnus</strong>.</p>
+      <div class="hero-actions">
+        <button class="btn-hero btn-hero-gold" onclick="document.getElementById('forfaits').scrollIntoView({behavior:'smooth'})">✦ Obtenir mon accès</button>
+        <button class="btn-hero btn-hero-outline" onclick="document.getElementById('catalogue').scrollIntoView({behavior:'smooth'})">Voir les livres ↓</button>
+      </div>
+      <div class="hero-scroll"><div class="scroll-line"></div><span>Défiler</span></div>
+    </section>
+    <div class="stats-bar reveal">
+      <div class="stat-item"><span class="stat-num" data-target="5">0</span><span class="stat-label">Ouvrages disponibles</span></div>
+      <div class="stat-item"><span class="stat-num" data-target="8">0</span><span class="stat-label">Années d'expertise</span></div>
+      <div class="stat-item"><span class="stat-num" data-target="90">0</span><span class="stat-label">Jours pour tout changer</span></div>
+      <div class="stat-item"><span class="stat-num" data-target="5">0</span><span class="stat-label">Pays accompagnés</span></div>
+    </div>
+    <section class="section" id="catalogue">
+      <div class="section-header reveal">
+        <div><span class="section-eyebrow">✦ Le catalogue</span><h2 class="section-title">Les <em>ouvrages</em> du programme</h2></div>
+        <button class="section-cta" onclick="document.getElementById('forfaits').scrollIntoView({behavior:'smooth'})">Obtenir l'accès →</button>
+      </div>
+      <div class="books-grid" id="books-grid-public"></div>
+    </section>
+    <div class="cta-banner reveal" style="margin-bottom:80px;">
+      <div class="cta-banner-left">
+        <span class="cta-banner-eyebrow">✦ Accès illimité</span>
+        <h3 class="cta-banner-title">Commence à lire<br/><em>dès aujourd'hui.</em></h3>
+        <p class="cta-banner-desc">Un abonnement mensuel. Tous les livres. Aucun téléchargement possible.</p>
+      </div>
+      <div><button class="btn-hero btn-hero-gold" onclick="document.getElementById('forfaits').scrollIntoView({behavior:'smooth'})">✦ Choisir mon forfait</button></div>
+    </div>
+    <section class="plans-section" id="forfaits">
+      <div class="plans-inner">
+        <div class="plans-header reveal">
+          <span class="section-eyebrow">✦ Tarifs</span>
+          <h2 class="section-title">Choisis ton <em>accès</em></h2>
+          <p class="plans-header-desc">Paiement sécurisé via Mobile Money ou carte. Accès immédiat après paiement.</p>
+        </div>
+        <div class="plans-grid" id="plans-grid"></div>
+        <div class="plans-trust reveal">
+          <div class="trust-item"><span>🔒</span>Paiement sécurisé FedaPay</div>
+          <div class="trust-item"><span>📱</span>Mobile Money accepté</div>
+          <div class="trust-item"><span>⚡</span>Accès immédiat</div>
+          <div class="trust-item"><span>🚫</span>Aucun téléchargement</div>
+          <div class="trust-item"><span>🛡️</span>Garantie résultat (offre Transformation)</div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="footer">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">Bibliothèque <em>Génération Leader</em></div>
+        <div class="footer-tagline">par Michel Boglo</div>
+        <p class="footer-desc">La bibliothèque numérique de référence pour les professionnels francophones.</p>
+        <div class="social-links"><button class="social-btn">in</button><button class="social-btn">f</button><button class="social-btn">W</button></div>
+      </div>
+      <div>
+        <div class="footer-col-title">Bibliothèque</div>
+        <ul class="footer-links">
+          <li><a onclick="document.getElementById('catalogue').scrollIntoView({behavior:'smooth'})">Le catalogue</a></li>
+          <li><a>Confiance Intemporelle</a></li><li><a>Objectifs en Résultats</a></li>
+          <li><a>De Salarié à Entrepreneur</a></li><li><a>La Boucle Temporelle</a></li><li><a>Journal de Bord 90J</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Programmes</div>
+        <ul class="footer-links">
+          <li><a>Noyau d'Autorité 90</a></li><li><a>Carrière Booster 2.0</a></li>
+          <li><a>Audit Autorité Digitale</a></li><li><a>Génération Leader</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Mon compte</div>
+        <ul class="footer-links">
+          <li><a onclick="openAuth('login')">Se connecter</a></li>
+          <li><a onclick="openAuth('register')">Créer un compte</a></li>
+          <li><a onclick="document.getElementById('forfaits').scrollIntoView({behavior:'smooth'})">Voir les forfaits</a></li>
+          <li><a>Support WhatsApp</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">© 2025 <strong>Michel Boglo</strong> — Tous droits réservés. Lecture en ligne uniquement.</p>
+      <div class="footer-security"><span>🔒</span>Paiements sécurisés FedaPay</div>
+      <div class="footer-legal"><a>Conditions</a><a>Confidentialité</a><a>Mentions légales</a></div>
+    </div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ÉCRAN 2 — BIBLIOTHÈQUE LECTEUR
+══════════════════════════════════════════ -->
+<div class="screen" id="screen-library">
+  <header class="lib-header">
+    <div class="lib-header-left">
+      <div class="logo" onclick="showScreen('public')"><span class="logo-main">Bibliothèque <em>Génération Leader</em></span><span class="logo-sub">par Michel Boglo</span></div>
+    </div>
+    <div class="lib-header-right">
+      <div class="sub-badge"><span class="sub-dot"></span><span id="lib-plan-label">Accès actif</span></div>
+      <div class="user-avatar" id="lib-avatar">J</div>
+      <button class="btn btn-ghost" onclick="handleLogout()" style="font-size:0.72rem;padding:7px 16px;">Déconnexion</button>
+    </div>
+  </header>
+  <div class="lib-content">
+
+    <!-- Bienvenue -->
+    <div class="lib-welcome">
+      <div class="lib-welcome-time" id="lib-greeting-time">Bonjour</div>
+      <h1 class="lib-welcome-title">Bonjour, <em id="lib-firstname">lecteur</em> ✦</h1>
+      <p class="lib-welcome-sub" id="lib-expiry-text">Ton accès est actif. Bonne lecture.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="lib-stats">
+      <div class="lib-stat-card"><span class="lib-stat-icon">📚</span><span class="lib-stat-val">5</span><span class="lib-stat-lbl">Livres disponibles</span></div>
+      <div class="lib-stat-card"><span class="lib-stat-icon">📖</span><span class="lib-stat-val" id="stat-reading">0</span><span class="lib-stat-lbl">En cours</span></div>
+      <div class="lib-stat-card"><span class="lib-stat-icon">✅</span><span class="lib-stat-val" id="stat-done">0</span><span class="lib-stat-lbl">Terminés</span></div>
+      <div class="lib-stat-card"><span class="lib-stat-icon">⭐</span><span class="lib-stat-val" id="stat-xp">0</span><span class="lib-stat-lbl">Points XP</span></div>
+    </div>
+
+    <!-- Onglets navigation -->
+    <div class="lib-tabs" id="lib-tabs">
+      <button class="lib-tab active" onclick="switchLibTab('livres')" id="tab-livres">📚 Livres</button>
+      <button class="lib-tab" onclick="switchLibTab('podcasts')" id="tab-podcasts">🎙️ Podcasts</button>
+      <button class="lib-tab" onclick="switchLibTab('coaching')" id="tab-coaching">🎯 Coaching</button>
+      <button class="lib-tab" onclick="switchLibTab('communaute')" id="tab-communaute">👥 Communauté</button>
+    </div>
+
+    <!-- ── ONGLET LIVRES ── -->
+    <div id="panel-livres">
+      <div class="lib-section-title">Continuer la <em>lecture</em></div>
+      <div class="last-read" id="last-read-block"></div>
+      <div class="lib-filters">
+        <button class="filter-pill active" onclick="filterLibBooks('all',this)">Tous</button>
+        <button class="filter-pill" onclick="filterLibBooks('reading',this)">En cours</button>
+        <button class="filter-pill" onclick="filterLibBooks('personal-branding',this)">Personal Branding</button>
+        <button class="filter-pill" onclick="filterLibBooks('entrepreneuriat',this)">Entrepreneuriat</button>
+        <button class="filter-pill" onclick="filterLibBooks('confiance',this)">Confiance</button>
+      </div>
+      <div class="lib-section-title" style="margin-top:0">Tous les <em>ouvrages</em></div>
+      <div class="lib-books-grid" id="lib-books-grid"></div>
+    </div>
+
+    <!-- ── ONGLET PODCASTS ── -->
+    <div id="panel-podcasts" style="display:none">
+      <div class="lib-section-title">Mes <em>podcasts</em></div>
+      <div class="podcast-coming-soon">
+        <div class="pcs-icon">🎙️</div>
+        <div class="pcs-title">Les épisodes arrivent bientôt</div>
+        <div class="pcs-desc">Michel Boglo prépare une série d'épisodes exclusifs pour les membres. Chaque épisode sera accompagné d'un quiz pour ancrer les apprentissages.</div>
+        <div class="pcs-badge">🔔 Tu seras notifié dès la sortie du premier épisode</div>
+      </div>
+      <div class="lib-section-title" style="margin-top:40px">Aperçu des <em>prochains épisodes</em></div>
+      <div class="podcasts-grid" id="podcasts-grid"></div>
+    </div>
+
+    <!-- ── ONGLET COACHING ── -->
+    <div id="panel-coaching" style="display:none">
+      <div class="lib-section-title">Mes séances de <em>coaching</em></div>
+      <div id="coaching-panel"></div>
+    </div>
+
+    <!-- ── ONGLET COMMUNAUTÉ ── -->
+    <div id="panel-communaute" style="display:none">
+      <div class="lib-section-title">Ma <em>communauté</em></div>
+      <div id="communaute-panel"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ÉCRAN 3 — VISIONNEUR DE LECTURE
+══════════════════════════════════════════ -->
+<div class="screen" id="screen-reader">
+
+  <!-- Topbar -->
+  <div class="reader-topbar">
+    <div class="reader-left">
+      <button class="reader-back" onclick="exitReader()">← Ma bibliothèque</button>
+      <div class="reader-book-info">
+        <div class="reader-book-name" id="reader-book-name">—</div>
+        <div class="reader-book-author">Michel Boglo</div>
+      </div>
+    </div>
+    <div class="reader-center">
+      <div class="reader-progress-bar">
+        <div class="reader-progress-fill" id="reader-progress" style="width:0%"></div>
+      </div>
+      <div class="reader-page-info">
+        Page <span id="reader-page-cur">1</span> sur <span id="reader-page-total">1</span>
+        &nbsp;·&nbsp; <span id="reader-pct">0</span>% lu
+      </div>
+    </div>
+    <div class="reader-right">
+      <button class="reader-ctrl" id="btn-toc" onclick="toggleSidebar()" title="Table des matières">☰</button>
+      <button class="reader-ctrl" id="btn-font-sm" onclick="adjustFont(-1)" title="Réduire la police">A−</button>
+      <button class="reader-ctrl" id="btn-font-lg" onclick="adjustFont(1)" title="Agrandir la police">A+</button>
+    </div>
+  </div>
+
+  <!-- Corps -->
+  <div class="reader-body" id="reader-body">
+
+    <!-- Sidebar TDM -->
+    <div class="reader-sidebar" id="reader-sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">✦ Table des matières</span>
+        <div class="sidebar-book" id="sidebar-book-name">—</div>
+      </div>
+      <div class="sidebar-chapters" id="sidebar-chapters"></div>
+    </div>
+
+    <!-- Zone lecture -->
+    <div class="reader-main" id="reader-main">
+      <div class="book-page" id="book-page"
+           oncontextmenu="return false;"
+           ondragstart="return false;"
+           onselectstart="return false;">
+
+        <div class="page-header">
+          <span class="page-header-title" id="ph-chapter">—</span>
+          <span class="page-header-num" id="ph-num">—</span>
+        </div>
+
+        <div class="page-body has-dropcap" id="page-body"></div>
+
+        <div class="page-watermark" id="page-watermark">Bibliothèque Génération Leader — Usage personnel exclusif</div>
+
+        <div class="page-footer">
+          <span class="page-footer-book" id="pf-book">—</span>
+          <span class="page-footer-num" id="pf-num">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation bas -->
+  <div class="reader-nav">
+    <button class="nav-arrow" id="btn-prev" onclick="changePage(-1)" title="Page précédente (←)">‹</button>
+    <div class="nav-center">
+      <input class="nav-page-input" type="number" id="nav-input" min="1" onchange="jumpToPage(this.value)" title="Aller à la page"/>
+      <div class="nav-total">/ <span id="nav-total">1</span> pages</div>
+    </div>
+    <button class="nav-arrow" id="btn-next" onclick="changePage(1)" title="Page suivante (→)">›</button>
+  </div>
+
+  <!-- Hint clavier -->
+  <div class="keyboard-hint" id="kb-hint">
+    <span class="key-badge">←</span> page précédente
+    <span style="margin:0 4px">·</span>
+    <span class="key-badge">→</span> page suivante
+  </div>
+
+</div><!-- /screen-reader -->
+
+<!-- ═══ MODAUX ═══ -->
+<div class="modal-overlay" id="modal-auth" onclick="handleOverlayClick(event,'modal-auth')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-auth')">✕</button>
+    <div class="auth-icon">🔑</div>
+    <h2 class="modal-title" id="auth-title">Bienvenue</h2>
+    <p class="modal-sub" id="auth-sub">Connecte-toi pour accéder à ta bibliothèque.</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Se connecter</button>
+      <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Créer un compte</button>
+    </div>
+    <div id="form-login">
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="login-email" placeholder="toi@email.com"/><div class="form-error" id="login-email-err">Email invalide.</div></div>
+      <div class="form-group"><label class="form-label">Mot de passe</label><input class="form-input" type="password" id="login-password" placeholder="••••••••"/><div class="form-error" id="login-pass-err">Mot de passe requis.</div></div>
+      <button class="btn-modal-primary" onclick="handleLogin()">Accéder à ma bibliothèque →</button>
+      <p class="modal-note">Pas encore de compte ? <span onclick="switchAuthTab('register')">Créer un accès</span></p>
+    </div>
+    <div id="form-register" style="display:none">
+      <div class="form-group"><label class="form-label">Prénom & Nom</label><input class="form-input" type="text" id="reg-name" placeholder="Jean Kofi"/><div class="form-error" id="reg-name-err">Nom requis.</div></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="reg-email" placeholder="toi@email.com"/><div class="form-error" id="reg-email-err">Email invalide.</div></div>
+      <div class="form-group"><label class="form-label">Mot de passe</label><input class="form-input" type="password" id="reg-password" placeholder="Minimum 8 caractères"/><div class="form-error" id="reg-pass-err">8 caractères minimum.</div></div>
+      <button class="btn-modal-primary" onclick="handleRegister()">Créer mon compte →</button>
+      <p class="modal-note">Déjà un compte ? <span onclick="switchAuthTab('login')">Se connecter</span></p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-payment" onclick="handleOverlayClick(event,'modal-payment')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-payment')">✕</button>
+    <div class="pay-steps">
+      <div class="pay-step active" id="step-1"><span class="pay-step-num">1</span>Infos</div>
+      <div class="pay-step" id="step-2"><span class="pay-step-num">2</span>Paiement</div>
+      <div class="pay-step" id="step-3"><span class="pay-step-num">3</span>Accès</div>
+    </div>
+    <h2 class="modal-title">Finaliser l'accès</h2>
+    <p class="modal-sub">Tu es à une étape de ta bibliothèque.</p>
+    <div class="pay-recap" id="pay-recap"></div>
+    <div class="form-group"><label class="form-label">Prénom & Nom</label><input class="form-input" type="text" id="pay-name" placeholder="Jean Kofi"/><div class="form-error" id="pay-name-err">Nom requis.</div></div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="pay-email" placeholder="toi@email.com"/><div class="form-error" id="pay-email-err">Email invalide.</div></div>
+    <button class="btn-modal-primary" id="btn-pay" onclick="initiateFedaPay()">🔒 Payer maintenant</button>
+    <div class="fedapay-note"><span>🔒</span><span>Paiement sécurisé via <strong style="color:var(--gold-light)">FedaPay</strong>. Mobile Money et carte acceptés.</span></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- ══════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════ -->
+<script>
+/* ─── CONSTANTES ─── */
+const FEDAPAY_KEY = 'pk_live_c9IxoXCp1VZe7ZQyB-ylFmgv';
+
+/* ─── SUPABASE ─── */
+const SUPABASE_URL  = 'https://fnfeabwjfvxyijyvqcmm.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZuZmVhYndqZnZ4eWlqeXZxY21tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjA2NTEsImV4cCI6MjA5MDg5NjY1MX0.bEs-mbFMx1DBIXzz9kZ0yoFFDTwlVPogv0I_UYxmq3A';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* ─── DATA LIVRES ─── */
+const BOOKS = [
+  {
+    id:'livre-1', icon:'🕯️', num:'01',
+    title:'Confiance Intemporelle',
+    desc:'Développe une confiance en toi qui résiste à toute épreuve.',
+    tag:'Développement personnel', cat:'confiance',
+    pages: 8, progress: 0,
+    chapters: [
+      { title:'Avant-propos', startPage:1 },
+      { title:'Ce que la confiance n\'est pas', startPage:2 },
+      { title:'L\'identité avant la performance', startPage:4 },
+      { title:'Construire sur du roc', startPage:6 },
+      { title:'Conclusion', startPage:8 }
+    ],
+    content: [
+      { chapter:'Avant-propos', heading:'Avant-propos', body:`<p>Ce livre, je l'ai écrit pour tous ceux qui savent qu'ils ont de la valeur — mais qui peinent à le faire sentir. Pour ceux qui, dans les salles de réunion, dans les espaces de coworking, sur les plateformes numériques, se demandent encore : <em>est-ce que je suis légitime ici ?</em></p><p>La réponse est oui. Elle l'a toujours été. Mais la certitude ne vient pas de l'extérieur. Elle se construit. Et c'est précisément ce que tu vas apprendre dans ces pages.</p><blockquote>La confiance n'est pas un état. C'est une pratique quotidienne.</blockquote><p>Prends le temps de chaque chapitre. Ce livre n'est pas fait pour être lu vite — il est fait pour transformer lentement.</p>` },
+      { chapter:'Ce que la confiance n\'est pas', heading:'Chapitre 1 — Ce que la confiance n\'est pas', body:`<p>La confiance ne se construit pas comme on le croit. Pendant des années, tu as entendu les mêmes conseils. Sois positif. Crois en toi. Visualise ton succès. Tu as essayé. Et rien n'a changé.</p><p>Parce que la vraie question n'est pas <em>comment avoir confiance</em>. La vraie question est : confiance en quoi, exactement ?</p><p>La plupart des gens confondent la confiance avec la certitude. Ils pensent qu'avoir confiance, c'est ne jamais douter. C'est une erreur fondamentale. Les plus grandes figures que j'ai accompagnées doutaient. Constamment. Profondément. Mais leur doute ne les paralysait pas — il les aiguisait.</p>` },
+      { chapter:'Ce que la confiance n\'est pas', heading:'Chapitre 1 — Ce que la confiance n\'est pas (suite)', body:`<p>Il y a une différence capitale entre la confiance situationnelle et la confiance intemporelle. La première dépend de tes résultats. Quand ça marche, tu te sens bien. Quand ça échoue, tu t'effondres.</p><p>La confiance intemporelle, elle, ne bouge pas. Elle existe en dehors du jugement des autres. Elle ne dépend pas de ton chiffre d'affaires du mois, de ton nombre d'abonnés, ou de la validation de ton responsable.</p><blockquote>La vraie confiance est celle qui tient même quand les résultats ne suivent pas encore.</blockquote><p>Comment on construit quelque chose d'aussi solide ? C'est l'objet de ce que tu t'apprêtes à lire dans les prochains chapitres.</p>` },
+      { chapter:'L\'identité avant la performance', heading:'Chapitre 2 — L\'identité avant la performance', body:`<p>Avant de performer, il faut savoir qui tu es. Cela paraît évident. Ça ne l'est pas.</p><p>La majorité des professionnels que j'accompagne ont construit leur identité autour de ce qu'ils <strong>font</strong>, pas de ce qu'ils <strong>sont</strong>. Je suis manager. Je suis consultant. Je suis entrepreneur.</p><p>Ces étiquettes sont utiles pour se présenter. Elles sont dangereuses comme fondation identitaire. Pourquoi ? Parce que le jour où le poste disparaît, où l'entreprise ferme, où le secteur change — cette identité s'effondre avec.</p>` },
+      { chapter:'L\'identité avant la performance', heading:'Chapitre 2 — L\'identité (suite)', body:`<p>La confiance intemporelle commence là. Pas dans ce que tu fais. Pas dans ce que tu as accompli. Dans ce que tu es, fondamentalement, quand tout le reste est retiré.</p><p>Exercice : prends une feuille. Écris dix choses que tu es — sans utiliser ton titre professionnel, ton employeur, ou tes résultats. Juste toi. Tes valeurs. Tes convictions. Ta manière d'être dans le monde.</p><blockquote>Ce que tu trouveras dans cet exercice est la matière première de ta confiance intemporelle.</blockquote>` },
+      { chapter:'Construire sur du roc', heading:'Chapitre 3 — Construire sur du roc', body:`<p>Il existe deux types de fondations sur lesquelles les gens construisent leur confiance. La sable : les résultats, les validations, les comparaisons. Le roc : les valeurs, les engagements, l'intégrité personnelle.</p><p>La différence n'est pas philosophique. Elle est pratique. Ceux qui construisent sur le sable s'effondrent à la première tempête. Ceux qui construisent sur le roc traversent les crises en restant debout.</p><p>Ce chapitre est consacré à identifier ton roc personnel. Ce sur quoi tu peux toujours revenir, même quand tout le reste vacille.</p>` },
+      { chapter:'Construire sur du roc', heading:'Chapitre 3 — Le roc (suite)', body:`<p>Ton roc se compose de trois éléments : tes valeurs fondamentales, tes engagements non négociables, et ta vision à long terme. Ces trois éléments ne changent pas — ou très rarement, et uniquement après une réflexion profonde.</p><p>Quand tu ancres ta confiance dans ces éléments, tu deviens imperméable aux jugements superficiels. Les critiques peuvent t'atteindre — mais elles ne peuvent plus te définir.</p><blockquote>La critique ne blesse que celui qui n'a pas encore trouvé son roc.</blockquote>` },
+      { chapter:'Conclusion', heading:'Conclusion — La confiance comme pratique', body:`<p>Tu arrives à la fin de ce premier ouvrage. Mais tu n'arrives pas à la fin du chemin — tu en es au début.</p><p>La confiance intemporelle se construit jour après jour. Elle demande de la répétition, de la patience, et parfois, du courage. Le courage de rester soi-même quand le monde t'invite à être quelqu'un d'autre.</p><p>Dans les prochains ouvrages de cette bibliothèque, nous allons construire ensemble chaque couche de ton autorité : tes objectifs, ta transition professionnelle, ta marque personnelle, et ta transformation sur 90 jours.</p><blockquote>Tu n'as pas besoin de tout changer. Tu as besoin de tout choisir consciemment.</blockquote><p>À très vite, Michel Boglo.</p>` }
+    ]
+  },
+  {id:'livre-2',icon:'🎯',num:'02',title:'Transformez Vos Objectifs en Résultats',desc:'La méthode pour passer de l\'intention à l\'action concrète.',tag:'Performance',cat:'entrepreneuriat',pages:6,progress:0,chapters:[{title:'Introduction',startPage:1},{title:'Diagnostiquer l\'objectif',startPage:2},{title:'La structure de l\'action',startPage:4},{title:'Tenir dans le temps',startPage:6}],content:[{chapter:'Introduction',heading:'Introduction — L\'écart entre vouloir et faire',body:`<p>Tu as des objectifs. Depuis longtemps. Certains sont notés dans un carnet. D'autres vivent dans ta tête depuis des mois, voire des années. Tu les connais par cœur. Tu sais exactement ce que tu veux. Et pourtant — ils sont toujours là. En attente.</p><p>Cet écart entre vouloir et faire est la principale source de frustration pour les professionnels ambitieux. Non pas le manque de talent. Non pas le manque d'opportunités. L'écart entre l'intention et l'action.</p>`},{chapter:'Diagnostiquer l\'objectif',heading:'Chapitre 1 — Diagnostiquer l\'objectif',body:`<p>Tous les objectifs ne se valent pas. Certains sont des désirs déguisés. D'autres sont des obligations sociales habillées en aspirations. D'autres encore sont authentiques mais mal formulés.</p><p>La première étape n'est pas de planifier. C'est de diagnostiquer. Qu'est-ce que tu veux réellement ? Pourquoi maintenant ? Qu'est-ce qui s'est passé jusqu'ici ?</p>`},{chapter:'Diagnostiquer l\'objectif',heading:'Chapitre 1 — Diagnostic (suite)',body:`<p>Ces questions paraissent simples. Elles ne le sont pas. Prends une feuille. Réponds à chacune avec au moins dix lignes. Ne triche pas.</p><p>Ce diagnostic est la base de tout ce qui va suivre. Un objectif mal diagnostiqué est un objectif mal poursuivi — et presque toujours, un objectif abandonné.</p>`},{chapter:'La structure de l\'action',heading:'Chapitre 2 — La structure de l\'action',body:`<p>Un objectif sans structure n'est qu'un souhait. La structure, c'est la différence entre "je veux perdre du poids" et "je marche 30 minutes chaque matin avant 8h".</p><p>La structure transforme l'abstrait en concret. Elle rend l'objectif mesurable, observable, et surtout — atteignable par petits pas.</p>`},{chapter:'Tenir dans le temps',heading:'Chapitre 3 — Tenir dans le temps',body:`<p>Le vrai défi n'est pas de commencer. C'est de continuer. Surtout quand la motivation s'estompe — et elle s'estompe toujours.</p><p>Ce chapitre est consacré aux systèmes qui tiennent dans le temps même quand la motivation, elle, ne tient plus.</p>`},{chapter:'Tenir dans le temps',heading:'Conclusion — L\'engagement comme carburant',body:`<p>L'engagement dépasse la motivation. La motivation est une émotion — elle monte et descend. L'engagement est une décision — elle tient dans le temps.</p><p>Décide aujourd'hui ce à quoi tu t'engages. Pas ce que tu espères. Ce à quoi tu t'engages vraiment.</p>`}]},
+  {id:'livre-3',icon:'🚀',num:'03',title:'De Salarié à Entrepreneur',desc:'La transition sans risque du salariat vers l\'indépendance.',tag:'Entrepreneuriat',cat:'entrepreneuriat',pages:6,progress:0,chapters:[{title:'Avant-propos',startPage:1},{title:'Le mythe du bon moment',startPage:2},{title:'La transition intelligente',startPage:4},{title:'Les premiers 90 jours',startPage:6}],content:[{chapter:'Avant-propos',heading:'Avant-propos',body:`<p>Ce livre, je l'aurais voulu dans les mains quand j'ai fait le saut. Quand j'avais toutes les idées du monde et aucun système pour les organiser. Quand je pensais que l'enthousiasme remplacerait la stratégie.</p><p>Il ne le remplace pas. L'enthousiasme s'épuise. La stratégie, elle, tient dans le temps.</p>`},{chapter:'Le mythe du bon moment',heading:'Chapitre 1 — Le mythe du bon moment',body:`<p>Il n'y a pas de bon moment pour devenir entrepreneur. Ce n'est pas un constat pessimiste — c'est libérateur. Parce que si le bon moment n'existe pas, tu peux arrêter de l'attendre.</p><p>J'ai accompagné des gens qui ont attendu d'avoir assez d'économies, assez d'expérience, assez de certitudes. Et pendant qu'ils attendaient, d'autres — moins préparés — ont lancé. Et réussi.</p>`},{chapter:'Le mythe du bon moment',heading:'Chapitre 1 — Le bon moment (suite)',body:`<p>La différence entre ceux qui lancent et ceux qui attendent n'est pas la préparation. C'est la tolérance à l'incertitude.</p><p>L'entrepreneuriat est fondamentalement un acte de foi organisé. Organisé — pas irresponsable. Mais un acte de foi quand même.</p>`},{chapter:'La transition intelligente',heading:'Chapitre 2 — La transition intelligente',body:`<p>Il existe des façons intelligentes de quitter le salariat. Et des façons dangereuses. La différence tient souvent à deux facteurs : la préparation financière et la validation du marché.</p><p>Avant de quitter ton emploi, tu dois avoir validé que quelqu'un est prêt à te payer pour ce que tu proposes. Pas "potentiellement". Réellement.</p>`},{chapter:'Les premiers 90 jours',heading:'Chapitre 3 — Les premiers 90 jours',body:`<p>Les 90 premiers jours après ton saut sont décisifs. Pas parce que tu dois tout réussir — mais parce que les habitudes que tu prends dans ces 90 jours définissent le type d'entrepreneur que tu vas devenir.</p><p>Ce chapitre te donne un plan semaine par semaine pour ces premiers mois critiques.</p>`},{chapter:'Les premiers 90 jours',heading:'Conclusion — L\'entrepreneur que tu choisis d\'être',body:`<p>Au bout du compte, devenir entrepreneur est moins une question de business que d'identité. Qui choisis-tu d\'être chaque matin quand tu te lèves ?</p><p>C'est cette réponse qui détermine tout le reste.</p>`}]},
+  {id:'livre-4',icon:'⚡',num:'04',title:'La Boucle Temporelle du Personal Branding',desc:'La méthode exclusive Je suis → Je veux → Je fais → Je donne.',tag:'Personal Branding',cat:'personal-branding',pages:8,progress:25,chapters:[{title:'Introduction fondatrice',startPage:1},{title:'Je suis — Le Noyau',startPage:2},{title:'Je veux — La vision',startPage:4},{title:'Je fais — L\'action',startPage:5},{title:'Je donne — La valeur',startPage:6},{title:'On me perçoit',startPage:7},{title:'Conclusion',startPage:8}],content:[{chapter:'Introduction fondatrice',heading:'La Boucle — Introduction fondatrice',body:`<p>Tout commence par une question simple. Mais aucun professionnel ne prend vraiment le temps d'y répondre. La question est celle-ci : comment les autres te perçoivent-ils réellement ?</p><p>Pas comment tu aimerais qu'ils te perçoivent. Pas comment tu te perçois toi-même. Comment ils te perçoivent, toi, aujourd'hui, quand tu n'es pas là pour contrôler le message.</p>`},{chapter:'Je suis — Le Noyau',heading:'Je suis — Le Noyau d\'Autorité',body:`<p>La première étape de la Boucle s'appelle <strong>Je suis</strong>. C'est le point de départ — et le plus négligé. Parce qu'on est pressé. On veut aller directement au résultat.</p><p>Tu peux publier chaque jour sur LinkedIn. Tu peux avoir un site parfait. Si tu n'es pas clair sur qui tu es — ton identité profonde, tes valeurs de fond, ton archétype dominant — tout le reste est du bruit.</p>`},{chapter:'Je veux — La vision',heading:'Je veux — La vision clarifiée',body:`<p>Une fois que tu sais qui tu es, la question suivante est : vers quoi tu vas ? Quelle est ta vision ? Quel professionnel veux-tu être dans 3 ans ? Dans 5 ans ?</p><p>La vision n'est pas un rêve vague. C'est une direction précise qui guide chaque décision de communication, chaque choix de positionnement, chaque collaboration.</p>`},{chapter:'Je fais — L\'action',heading:'Je fais — L\'action stratégique',body:`<p>La plupart des gens commencent ici. Ils publient, ils prospecten, ils créent. Sans avoir défini qui ils sont ni vers quoi ils vont. C'est pourquoi leurs actions ne produisent pas les résultats attendus.</p><p>Le <em>Je fais</em> n'est efficace que s'il est aligné avec le <em>Je suis</em> et le <em>Je veux</em>. L'action sans identité est de l'agitation. L'action avec identité est de la puissance.</p>`},{chapter:'Je donne — La valeur',heading:'Je donne — La valeur perçue',body:`<p>Donner avant de recevoir. C'est le principe fondateur de toute autorité durable. Ceux qui construisent les marques personnelles les plus puissantes dans l'espace francophone africain ont en commun une chose : ils donnent de la valeur réelle, gratuitement, régulièrement.</p><p>Ce n'est pas de la philanthropie. C'est de la stratégie. La confiance se gagne avant de se monétiser.</p>`},{chapter:'On me perçoit',heading:'On me perçoit — La perception maîtrisée',body:`<p>La perception est la résultante de tout ce qui précède. Ce n'est pas quelque chose que tu contrôles directement — mais que tu influences profondément à travers chacune des étapes précédentes.</p><p>Quand le <em>Je suis</em>, le <em>Je veux</em>, le <em>Je fais</em> et le <em>Je donne</em> sont alignés, la perception s'aligne naturellement. Les gens te voient comme tu veux être vu — parce que tu es devenu ce que tu voulais incarner.</p>`},{chapter:'Conclusion',heading:'Conclusion — La Boucle comme mode de vie',body:`<p>La Boucle Temporelle n'est pas une méthode que tu appliques une fois. C'est un système que tu revisites régulièrement. Parce que tu évolues. Parce que ton marché évolue. Parce que la perception se construit dans le temps.</p><p>Dans les prochains mois, reviens à cette Boucle. Repose-toi les cinq questions. Ajuste. Recommence. C'est ainsi que se bâtissent les autorités durables.</p>`},{chapter:'Conclusion',heading:'Postface — Ton Noyau d\'Autorité',body:`<p>Au centre de la Boucle, il y a ton Noyau d'Autorité. C'est l'essence de ce que tu es, de ce que tu apportes, et de la façon dont tu te distingues dans un marché de plus en plus bruyant.</p><p>Prends soin de ce Noyau. Alimente-le. Défendez-le. Il est la source de tout le reste.</p>`}]},
+  {id:'livre-5',icon:'📓',num:'05',title:'Journal de Bord 90 Jours',desc:'Ton compagnon quotidien pour transformer ta posture en 3 mois.',tag:'Journal de bord',cat:'personal-branding',pages:6,progress:0,chapters:[{title:'Mode d\'emploi',startPage:1},{title:'Semaine 1 — Fondations',startPage:2},{title:'Semaine 2 — Exposition',startPage:3},{title:'Semaine 3 — Engagement',startPage:4},{title:'Semaine 4 — Consolidation',startPage:5},{title:'Bilan 90 jours',startPage:6}],content:[{chapter:'Mode d\'emploi',heading:'Mode d\'emploi — Comment utiliser ce journal',body:`<p>Ce journal n'est pas un simple carnet. C'est un système de transformation progressive. Chaque semaine a un thème. Chaque jour a une intention. Chaque entrée est un pas de plus vers la version de toi que tu veux incarner devant ton marché.</p><p><strong>La règle fondamentale :</strong> honnêteté radicale. Ce que tu écris ici n'est pas pour impressionner. C'est pour avancer.</p>`},{chapter:'Semaine 1 — Fondations',heading:'Semaine 1 — Poser les fondations',body:`<p>Les 7 premiers jours sont consacrés à une seule chose : te connaître toi-même avec précision. Tes valeurs. Tes forces. Tes zones d'ombre. La transformation que tu apportes naturellement aux gens autour de toi.</p><p>Jour 1 : Qui suis-je quand personne ne me regarde ?<br/>Jour 2 : Quelle est ma valeur ajoutée naturelle ?<br/>Jour 3 : Quelles sont mes trois valeurs cardinales ?</p>`},{chapter:'Semaine 2 — Exposition',heading:'Semaine 2 — S\'exposer stratégiquement',body:`<p>La deuxième semaine est consacrée à ta présence. Pas à ta perfection — à ta présence. Beaucoup de professionnels attendent d'être "prêts" pour se montrer. Ils attendent encore.</p><p>La visibilité imparfaite bat toujours l'invisibilité parfaite.</p>`},{chapter:'Semaine 3 — Engagement',heading:'Semaine 3 — Créer de l\'engagement',body:`<p>Tu n'as pas besoin de milliers d'abonnés. Tu as besoin d'une communauté engagée. 100 personnes qui t'écoutent vraiment valent plus que 10 000 qui défilent.</p><p>Cette semaine est consacrée à aller vers les autres. Commenter. Partager. Créer des conversations réelles.</p>`},{chapter:'Semaine 4 — Consolidation',heading:'Semaine 4 — Consolider et monétiser',body:`<p>La quatrième semaine est celle de la consolidation. Tu poses les bases d'une offre claire, d'un message précis, d'un parcours client défini.</p><p>C'est ici que ta marque personnelle commence à générer des opportunités concrètes.</p>`},{chapter:'Bilan 90 jours',heading:'Bilan 90 jours — Qui es-tu devenu ?',body:`<p>Retourne à la première page de ce journal. Relis ce que tu as écrit le Jour 1. Et compare avec qui tu es aujourd'hui.</p><p>La transformation est réelle. Elle s'est faite page après page, jour après jour, décision après décision. C'est ainsi que se construisent les autorités durables.</p><p>Bienvenue de l'autre côté.</p>`}]}
+];
+
+const PLANS = [
+  {
+    id:'lecteur', icon:'📖', name:'Lecteur', price:1500, period:'/ mois', duration:1,
+    desc:'Pour celui qui veut commencer à se former à son rythme, sans engagement.',
+    features:[
+      '1 livre au choix par mois',
+      'Quiz du livre choisi inclus',
+      'Progression sauvegardée',
+      'Accès immédiat après paiement'
+    ],
+    coaching:0, community:false, formation:false, featured:false
+  },
+  {
+    id:'apprenant', icon:'🎧', name:'Apprenant', price:4500, period:'/ mois', duration:1,
+    desc:'Pour celui qui veut se former sérieusement chaque mois sur tous les supports.',
+    features:[
+      'Accès illimité aux 5 livres',
+      'Accès à tous les podcasts',
+      'Tous les quiz gamifiés',
+      'Tableau de bord de progression',
+      'Badges & points de maîtrise'
+    ],
+    coaching:0, community:false, formation:false, featured:false
+  },
+  {
+    id:'batisseur', icon:'🏗️', name:'Bâtisseur', price:15000, period:'/ 3 mois', duration:3,
+    desc:'Pour celui qui veut passer à l\'action avec un accompagnement réel.',
+    features:[
+      'Tout l\'Offre Apprenant (3 mois)',
+      '2 séances de coaching individuel',
+      '1 formation collective/mois',
+      'Accès communauté privée',
+      'Suivi par message entre séances'
+    ],
+    coaching:2, community:true, formation:true, featured:true
+  },
+  {
+    id:'autorite', icon:'⚡', name:'Autorité', price:35000, period:'/ 6 mois', duration:6,
+    desc:'Pour celui qui veut une transformation profonde et durablement accompagnée.',
+    features:[
+      'Tout l\'Offre Bâtisseur (6 mois)',
+      '4 séances de coaching individuel',
+      'Bilan de mi-parcours à 3 mois',
+      'Suivi personnalisé hebdomadaire',
+      'Accès prioritaire communauté',
+      '1 formation collective/mois'
+    ],
+    coaching:4, community:true, formation:true, featured:false
+  },
+  {
+    id:'transformation', icon:'👑', name:'Transformation Totale', price:75000, period:'/ 1 an', duration:12,
+    desc:'L\'engagement total. Pour celui qui bâtit une autorité durable sur le long terme.',
+    features:[
+      'Tout l\'Offre Autorité (12 mois)',
+      '8 séances de coaching individuel',
+      'Toutes les nouvelles sorties en avant-première',
+      'Canal privé direct avec Michel Boglo',
+      'Garantie résultat à 6 mois',
+      'Badge "Lecteur Autorité" VIP'
+    ],
+    coaching:8, community:true, formation:true, featured:false
+  }
+];
+
+/* ─── DONNÉES PODCASTS ─── */
+const PODCASTS = [
+  {
+    id:'pod-1', num:'01', icon:'🎙️',
+    title:'Construire son autorité en 90 jours',
+    desc:'Les 3 leviers fondamentaux pour passer de compétent à reconnu dans ton secteur.',
+    duration:'28 min', date:'Prochainement', available:false,
+    quiz:[]
+  },
+  {
+    id:'pod-2', num:'02', icon:'🧠',
+    title:'Personal Branding : les erreurs à éviter',
+    desc:'Les 5 pièges que font 90% des professionnels francophones sur LinkedIn.',
+    duration:'34 min', date:'Prochainement', available:false,
+    quiz:[]
+  },
+  {
+    id:'pod-3', num:'03', icon:'💡',
+    title:'De l\'expertise à l\'offre irrésistible',
+    desc:'Comment packager ce que tu sais déjà faire en une offre que les gens veulent acheter.',
+    duration:'41 min', date:'Prochainement', available:false,
+    quiz:[]
+  }
+];
+
+/* ─── ÉTAT GLOBAL ─── */
+let billingMode   = 'monthly';
+let selectedPlan  = null;
+let currentUser   = null;
+let currentFilter = 'all';
+let currentLibTab = 'livres'; // 'livres' | 'podcasts' | 'coaching' | 'communaute'
+
+/* ─── ÉTAT LECTEUR ─── */
+let readerBook    = null;   // livre ouvert
+let readerPage    = 0;      // index page courante (0-based)
+let readerFontSize = 1.08;  // rem
+let sidebarOpen   = true;
+
+/* ══════════════════════════════════════════
+   NAVIGATION ÉCRANS
+══════════════════════════════════════════ */
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ══════════════════════════════════════════
+   VISIONNEUR
+══════════════════════════════════════════ */
+function goToReader(bookId) {
+  readerBook = BOOKS.find(b => b.id === bookId);
+  if (!readerBook) return;
+
+  // Reprendre à la dernière page lue
+  const savedPage = parseInt(localStorage.getItem('progress_' + bookId) || '0');
+  readerPage = Math.min(savedPage, readerBook.content.length - 1);
+
+  renderReaderPage();
+  buildTOC();
+  showScreen('reader');
+
+  // Afficher le hint clavier
+  const hint = document.getElementById('kb-hint');
+  hint.style.animation = 'none';
+  void hint.offsetWidth;
+  hint.style.animation = 'fadeHint 4s ease 0.5s forwards';
+}
+
+function renderReaderPage() {
+  if (!readerBook) return;
+  const page   = readerBook.content[readerPage];
+  const total  = readerBook.content.length;
+  const pct    = total > 1 ? Math.round((readerPage / (total - 1)) * 100) : 100;
+
+  // Topbar
+  document.getElementById('reader-book-name').textContent  = readerBook.title;
+  document.getElementById('reader-page-cur').textContent   = readerPage + 1;
+  document.getElementById('reader-page-total').textContent = total;
+  document.getElementById('reader-pct').textContent        = pct;
+  document.getElementById('reader-progress').style.width   = pct + '%';
+
+  // Sidebar book name
+  document.getElementById('sidebar-book-name').textContent = readerBook.title;
+
+  // Contenu page
+  document.getElementById('ph-chapter').textContent = page.chapter;
+  document.getElementById('ph-num').textContent     = `Page ${readerPage + 1}`;
+  document.getElementById('page-body').innerHTML    =
+    `<h2>${page.heading}</h2>${page.body}`;
+  document.getElementById('pf-book').textContent    = readerBook.title + ' — Michel Boglo';
+  document.getElementById('pf-num').textContent     = `${readerPage + 1} / ${total}`;
+  document.getElementById('page-watermark').textContent =
+    currentUser ? `Bibliothèque Génération Leader — ${currentUser.email}` : 'Bibliothèque Génération Leader — Usage personnel exclusif';
+
+  // Taille de police
+  document.getElementById('page-body').style.fontSize = readerFontSize + 'rem';
+
+  // Navigation input
+  const input = document.getElementById('nav-input');
+  input.value = readerPage + 1;
+  input.max   = total;
+  document.getElementById('nav-total').textContent = total;
+
+  // Boutons
+  document.getElementById('btn-prev').disabled = readerPage === 0;
+  document.getElementById('btn-next').disabled = readerPage === total - 1;
+
+  // Sidebar — activer chapitre courant
+  document.querySelectorAll('.chapter-item').forEach((el, i) => {
+    el.classList.toggle('active',
+      readerBook.chapters[i]?.startPage - 1 <= readerPage &&
+      (i === readerBook.chapters.length - 1 || readerBook.chapters[i+1]?.startPage - 1 > readerPage)
+    );
+  });
+
+  // Sauvegarder progression
+  saveProgress();
+
+  // Scroll haut de la zone de lecture
+  document.getElementById('reader-main').scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Mettre à jour progression livre dans BOOKS
+  readerBook.progress = pct;
+}
+
+function changePage(delta) {
+  if (!readerBook) return;
+  const next = readerPage + delta;
+  if (next < 0 || next >= readerBook.content.length) return;
+  readerPage = next;
+  renderReaderPage();
+}
+
+function jumpToPage(val) {
+  const n = parseInt(val);
+  if (!readerBook || isNaN(n)) return;
+  readerPage = Math.max(0, Math.min(n - 1, readerBook.content.length - 1));
+  renderReaderPage();
+}
+
+function adjustFont(dir) {
+  readerFontSize = Math.max(0.85, Math.min(1.45, readerFontSize + dir * 0.08));
+  document.getElementById('page-body').style.fontSize = readerFontSize + 'rem';
+}
+
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  const sb = document.getElementById('reader-sidebar');
+  sb.classList.toggle('collapsed', !sidebarOpen);
+  document.getElementById('btn-toc').classList.toggle('active', sidebarOpen);
+}
+
+function buildTOC() {
+  if (!readerBook) return;
+  document.getElementById('sidebar-chapters').innerHTML =
+    readerBook.chapters.map((ch, i) => `
+      <div class="chapter-item" onclick="jumpToPage(${ch.startPage})">
+        <span class="chapter-num">${String(i+1).padStart(2,'0')}</span>
+        <div>
+          <div class="chapter-title">${ch.title}</div>
+          <span class="chapter-pages">Page ${ch.startPage}</span>
+        </div>
+      </div>
+    `).join('');
+}
+
+function exitReader() {
+  saveProgress();
+  renderLibrary();
+  showScreen('library');
+}
+
+function saveProgress() {
+  if (!readerBook) return;
+  localStorage.setItem('progress_' + readerBook.id, readerPage);
+  /* Sauvegarde distante — non bloquante */
+  saveProgressRemote().catch(() => {});
+}
+
+/* ══════════════════════════════════════════
+   COUCHE 7 — PROTECTIONS MAXIMALES
+   ═══════════════════════════════════════════
+
+   NIVEAU 1 : Navigation clavier
+   NIVEAU 2 : Blocage raccourcis système
+   NIVEAU 3 : Anti clic-droit global
+   NIVEAU 4 : Anti-sélection texte
+   NIVEAU 5 : Anti-impression CSS + JS
+   NIVEAU 6 : Anti-screenshot (meta)
+   NIVEAU 7 : Watermark dynamique rotatif
+   NIVEAU 8 : Session timeout (inactivité)
+   NIVEAU 9 : Anti-DevTools (détection)
+   NIVEAU 10: Validation session active
+
+══════════════════════════════════════════ */
+
+/* ── NIVEAU 1 : Navigation clavier ── */
+document.addEventListener('keydown', e => {
+  const inReader = document.getElementById('screen-reader').classList.contains('active');
+
+  /* Flèches de navigation (reader uniquement) */
+  if (inReader && e.target.tagName !== 'INPUT') {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault(); changePage(1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault(); changePage(-1);
+    }
+  }
+
+  /* ── NIVEAU 2 : Raccourcis bloqués globalement dans le reader ── */
+  if (inReader) {
+    const blocked = {
+      's': 'Sauvegarde désactivée.',
+      'p': 'Impression désactivée.',
+      'u': 'Source désactivée.',
+      'c': null,   // copie — silencieux
+      'a': null,   // sélection tout — silencieux
+      'i': null,   // DevTools — silencieux
+      'j': null,   // DevTools console — silencieux
+      'f': null,   // recherche — silencieux
+    };
+    if ((e.ctrlKey || e.metaKey) && blocked.hasOwnProperty(e.key.toLowerCase())) {
+      e.preventDefault();
+      const msg = blocked[e.key.toLowerCase()];
+      if (msg) showToast(msg, 'error');
+    }
+    /* F12 DevTools */
+    if (e.key === 'F12') {
+      e.preventDefault();
+      showToast('Action non disponible.', 'error');
+    }
+  }
+});
+
+/* ── NIVEAU 3 : Anti clic-droit ── */
+document.addEventListener('contextmenu', e => {
+  if (document.getElementById('screen-reader').classList.contains('active')) {
+    e.preventDefault();
+    showToast('Menu contextuel désactivé.', 'error');
+  }
+});
+
+/* ── NIVEAU 4 : Anti-sélection texte forcée ── */
+document.addEventListener('selectstart', e => {
+  if (document.getElementById('screen-reader').classList.contains('active')) {
+    e.preventDefault();
+  }
+});
+document.addEventListener('copy', e => {
+  if (document.getElementById('screen-reader').classList.contains('active')) {
+    e.preventDefault();
+    e.clipboardData && e.clipboardData.setData('text/plain', '');
+  }
+});
+document.addEventListener('dragstart', e => {
+  if (document.getElementById('screen-reader').classList.contains('active')) {
+    e.preventDefault();
+  }
+});
+
+/* ── NIVEAU 5 : Anti-impression CSS + JS ── */
+(function() {
+  const printStyle = document.createElement('style');
+  printStyle.id = 'anti-print';
+  printStyle.media = 'print';
+  printStyle.innerHTML = `
+    #screen-reader { display: none !important; }
+    body::before {
+      content: "Ce contenu est protégé. Impression non autorisée. © Michel Boglo — Bibliothèque Génération Leader";
+      display: block !important;
+      font-size: 18px;
+      text-align: center;
+      padding: 40px;
+    }
+  `;
+  document.head.appendChild(printStyle);
+
+  /* Intercepter window.print() */
+  const _print = window.print;
+  window.print = function() {
+    if (document.getElementById('screen-reader').classList.contains('active')) {
+      showToast('Impression désactivée.', 'error');
+      return;
+    }
+    _print.call(window);
+  };
+
+  /* Détecter beforeprint */
+  window.addEventListener('beforeprint', e => {
+    if (document.getElementById('screen-reader').classList.contains('active')) {
+      document.getElementById('page-body').innerHTML =
+        '<p style="text-align:center;padding:60px;color:#999;">Contenu protégé — Impression non autorisée.<br/>© Michel Boglo — Bibliothèque Génération Leader</p>';
+    }
+  });
+  window.addEventListener('afterprint', () => {
+    /* Rerender la page après tentative */
+    if (readerBook) renderReaderPage();
+  });
+})();
+
+/* ── NIVEAU 7 : Watermark dynamique rotatif ── */
+function rotateWatermark() {
+  const el = document.getElementById('page-watermark');
+  if (!el || !currentUser) return;
+  const stamps = [
+    `Bibliothèque Génération Leader — ${currentUser.email}`,
+    `© Michel Boglo — Usage personnel exclusif`,
+    `${currentUser.name} — ${new Date().toLocaleDateString('fr-FR')}`,
+    `Accès personnel — Reproduction interdite`,
+  ];
+  let idx = 0;
+  setInterval(() => {
+    if (document.getElementById('screen-reader').classList.contains('active')) {
+      el.textContent = stamps[idx % stamps.length];
+      idx++;
+    }
+  }, 8000);
+}
+
+/* ── NIVEAU 8 : Session timeout — 30 min d'inactivité ── */
+let _inactivityTimer = null;
+const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
+
+function resetInactivityTimer() {
+  clearTimeout(_inactivityTimer);
+  _inactivityTimer = setTimeout(() => {
+    if (currentUser) {
+      showToast('Session expirée pour inactivité. Reconnecte-toi.', 'error');
+      setTimeout(() => {
+        handleLogout();
+      }, 2000);
+    }
+  }, INACTIVITY_LIMIT);
+}
+
+['mousemove','keydown','touchstart','scroll','click'].forEach(evt => {
+  document.addEventListener(evt, resetInactivityTimer, { passive: true });
+});
+
+/* ── NIVEAU 9 : Détection DevTools (heuristique) ── */
+(function detectDevTools() {
+  let devToolsOpen = false;
+  const threshold = 160;
+
+  setInterval(() => {
+    const widthDiff  = window.outerWidth  - window.innerWidth  > threshold;
+    const heightDiff = window.outerHeight - window.innerHeight > threshold;
+    if ((widthDiff || heightDiff) && !devToolsOpen) {
+      devToolsOpen = true;
+      if (document.getElementById('screen-reader').classList.contains('active')) {
+        document.getElementById('page-body').innerHTML =
+          '<div style="text-align:center;padding:80px 40px;color:#888;">' +
+          '<div style="font-size:2rem;margin-bottom:16px;">🔒</div>' +
+          '<div style="font-family:serif;font-size:1.4rem;color:#C9A84C;margin-bottom:12px;">Contenu protégé</div>' +
+          '<div style="font-size:0.9rem;line-height:1.7;">Les outils de développement ont été détectés.<br/>Ferme cette fenêtre pour reprendre ta lecture.</div>' +
+          '</div>';
+      }
+    } else if (!widthDiff && !heightDiff && devToolsOpen) {
+      devToolsOpen = false;
+      if (readerBook && document.getElementById('screen-reader').classList.contains('active')) {
+        renderReaderPage();
+      }
+    }
+  }, 1000);
+})();
+
+/* ── NIVEAU 10 : Validation session active ── */
+function validateSession() {
+  /* MOCK — à remplacer par vérification Supabase :
+     const { data: { session } } = await supabase.auth.getSession()
+     if (!session) handleLogout()
+  */
+  if (currentUser && document.getElementById('screen-reader').classList.contains('active')) {
+    /* Session valide — continuer */
+  }
+}
+setInterval(validateSession, 5 * 60 * 1000); // Toutes les 5 minutes
+
+/* ══════════════════════════════════════════
+   ONGLETS BIBLIOTHÈQUE
+══════════════════════════════════════════ */
+function switchLibTab(tab) {
+  currentLibTab = tab;
+  ['livres','podcasts','coaching','communaute'].forEach(t => {
+    document.getElementById('panel-' + t).style.display = t === tab ? 'block' : 'none';
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'podcasts') renderPodcasts();
+  if (tab === 'coaching') renderCoachingPanel();
+  if (tab === 'communaute') renderCommunautePanel();
+}
+
+/* ══════════════════════════════════════════
+   PODCASTS
+══════════════════════════════════════════ */
+function renderPodcasts() {
+  document.getElementById('podcasts-grid').innerHTML = PODCASTS.map(p => `
+    <div class="podcast-card">
+      <div class="podcast-card-top">
+        <div class="podcast-num-wrap">${p.icon}</div>
+        <div class="podcast-meta">
+          <span class="podcast-ep-num">✦ Épisode ${p.num}</span>
+          <div class="podcast-title">${p.title}</div>
+        </div>
+      </div>
+      <div class="podcast-desc">${p.desc}</div>
+      <div class="podcast-footer">
+        <span class="podcast-duration">🎧 ${p.duration}</span>
+        <span class="podcast-soon-badge">Bientôt disponible</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ══════════════════════════════════════════
+   COACHING
+══════════════════════════════════════════ */
+function renderCoachingPanel() {
+  const panel = document.getElementById('coaching-panel');
+  if (!currentUser || !currentUser.coaching || currentUser.coaching === 0) {
+    panel.innerHTML = `
+      <div class="coaching-upgrade">
+        <span class="coaching-upgrade-icon">🎯</span>
+        <div class="coaching-upgrade-title">Le coaching individuel n'est pas inclus dans ton offre actuelle</div>
+        <p class="coaching-upgrade-desc">Passe à l'offre <strong style="color:var(--gold)">Bâtisseur</strong> ou supérieure pour bénéficier de séances de coaching individuel avec Michel Boglo.</p>
+        <button class="btn-hero btn-hero-gold" onclick="showScreen('public');setTimeout(()=>document.getElementById('forfaits').scrollIntoView({behavior:'smooth'}),300)">Voir les offres avec coaching →</button>
+      </div>`;
+    return;
+  }
+  const remaining = (currentUser.coaching || 0) - (currentUser.coachingUsed || 0);
+  panel.innerHTML = `
+    <div class="coaching-hero">
+      <div class="coaching-hero-left">
+        <span class="coaching-hero-label">✦ Séances de coaching — ${currentUser.plan}</span>
+        <div class="coaching-hero-title">Réserve ta prochaine séance</div>
+        <p class="coaching-hero-sub">Séances individuelles avec Michel Boglo via visioconférence.<br/>Durée : 60 minutes par séance.</p>
+        <div class="coaching-btn-wrap">
+          <button class="btn-coaching-primary" ${remaining === 0 ? 'disabled' : ''} onclick="openCalendly()">
+            🗓️ ${remaining === 0 ? 'Plus de séances disponibles' : 'Réserver une séance'}
+          </button>
+        </div>
+      </div>
+      <div class="coaching-counter">
+        <span class="coaching-counter-num">${remaining}</span>
+        <span class="coaching-counter-lbl">séance${remaining > 1 ? 's' : ''}<br/>disponible${remaining > 1 ? 's' : ''}</span>
+      </div>
+    </div>
+    <div class="lib-section-title">Mes <em>séances passées</em></div>
+    <div style="background:var(--navy-card);border:1px solid var(--gold-border);border-radius:var(--radius-lg);padding:32px;text-align:center;color:var(--text-dim);font-size:0.84rem;line-height:1.7;">
+      Aucune séance effectuée pour l'instant.<br/>
+      <span style="color:var(--gold)">Réserve ta première séance dès maintenant.</span>
+    </div>`;
+}
+
+function openCalendly() {
+  /* Remplace l'URL par ton lien Cal.com réel */
+  const calUrl = 'https://cal.eu/coach-michel/60min';
+  window.open(calUrl, '_blank');
+  showToast('Redirection vers le calendrier de réservation…', 'default');
+}
+
+/* ══════════════════════════════════════════
+   COMMUNAUTÉ
+══════════════════════════════════════════ */
+function renderCommunautePanel() {
+  const panel = document.getElementById('communaute-panel');
+  if (!currentUser || !currentUser.community) {
+    panel.innerHTML = `
+      <div class="community-upgrade">
+        <span style="font-size:2.4rem;display:block;margin-bottom:16px;">👥</span>
+        <div class="community-upgrade-title">La communauté privée n'est pas incluse dans ton offre actuelle</div>
+        <p class="community-upgrade-desc">Passe à l'offre <strong style="color:var(--gold)">Bâtisseur</strong> ou supérieure pour rejoindre la communauté privée de membres.</p>
+        <button class="btn-hero btn-hero-gold" onclick="showScreen('public');setTimeout(()=>document.getElementById('forfaits').scrollIntoView({behavior:'smooth'}),300)">Voir les offres avec communauté →</button>
+      </div>`;
+    return;
+  }
+  panel.innerHTML = `
+    <div class="community-hero">
+      <span class="community-icon">🔥</span>
+      <div class="community-title">Rejoins la communauté <em>Autorité</em></div>
+      <p class="community-desc">Un espace privé réservé aux membres actifs. Échanges, entraide, partages d'expériences et accès direct à Michel Boglo.</p>
+      <button class="btn-community" onclick="openCommunity()">
+        <span>💬</span> Rejoindre le groupe privé
+      </button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+      <div class="lib-stat-card"><span class="lib-stat-icon">💬</span><span class="lib-stat-val" style="font-size:1.4rem">Actif</span><span class="lib-stat-lbl">Groupe WhatsApp</span></div>
+      <div class="lib-stat-card"><span class="lib-stat-icon">🤝</span><span class="lib-stat-val" style="font-size:1.4rem">Membres</span><span class="lib-stat-lbl">Professionnels engagés</span></div>
+      <div class="lib-stat-card"><span class="lib-stat-icon">⚡</span><span class="lib-stat-val" style="font-size:1.4rem">Accès</span><span class="lib-stat-lbl">Direct à Michel Boglo</span></div>
+    </div>`;
+}
+
+function openCommunity() {
+  /* Remplace par ton lien WhatsApp/Telegram réel */
+  const communityLink = 'https://chat.whatsapp.com/GOGMpTnVUJo4b2RJsDW5qb';
+  window.open(communityLink, '_blank');
+  showToast('Redirection vers la communauté privée…', 'default');
+}
+
+/* ══════════════════════════════════════════
+   BIBLIOTHÈQUE
+══════════════════════════════════════════ */
+function enterLibrary(user) {
+  currentUser = user;
+  document.getElementById('lib-avatar').textContent = user.name.charAt(0).toUpperCase();
+  document.getElementById('lib-plan-label').textContent = user.plan || 'Accès actif';
+  const h = new Date().getHours();
+  const greet = h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';
+  document.getElementById('lib-greeting-time').textContent = greet;
+  document.getElementById('lib-firstname').textContent = user.name.split(' ')[0];
+  if (user.expiry) document.getElementById('lib-expiry-text').textContent =
+    `Offre ${user.plan} — Accès actif jusqu'au ${user.expiry}.`;
+  renderLibrary();
+  rotateWatermark();
+  resetInactivityTimer();
+  switchLibTab('livres');
+  showScreen('library');
+}
+
+function renderLibrary() {
+  // Charger progressions sauvegardées
+  BOOKS.forEach(b => {
+    const saved = parseInt(localStorage.getItem('progress_' + b.id) || '-1');
+    if (saved >= 0) {
+      b.progress = Math.round((saved / (b.content.length - 1)) * 100);
+    }
+  });
+
+  const inProgress = BOOKS.find(b => b.progress > 0 && b.progress < 100) || BOOKS[0];
+  const pagesRead  = Math.floor(inProgress.content.length * inProgress.progress / 100);
+  document.getElementById('last-read-block').innerHTML = `
+    <div class="last-read-icon">${inProgress.icon}</div>
+    <div class="last-read-body">
+      <span class="last-read-label">✦ Continuer la lecture</span>
+      <div class="last-read-title">${inProgress.title}</div>
+      <div class="last-read-page">Page ${pagesRead} sur ${inProgress.content.length} — ${inProgress.progress}% lu</div>
+      <div class="prog-wrap" style="max-width:300px;">
+        <div class="prog-bar"><div class="prog-fill" style="width:${inProgress.progress}%"></div></div>
+      </div>
+    </div>
+    <button class="btn-read btn-read-primary" onclick="goToReader('${inProgress.id}')" style="align-self:center;width:auto;padding:12px 28px;">Reprendre →</button>
+  `;
+
+  const totalXP = BOOKS.reduce((acc,b) => acc + Math.floor(b.progress / 10) * 10, 0);
+  document.getElementById('stat-reading').textContent = BOOKS.filter(b=>b.progress>0&&b.progress<100).length;
+  document.getElementById('stat-done').textContent    = BOOKS.filter(b=>b.progress===100).length;
+  document.getElementById('stat-xp').textContent      = totalXP;
+  renderLibBooks();
+}
+
+function renderLibBooks() {
+  const filtered = currentFilter==='all' ? BOOKS
+    : currentFilter==='reading' ? BOOKS.filter(b=>b.progress>0&&b.progress<100)
+    : BOOKS.filter(b=>b.cat===currentFilter);
+
+  document.getElementById('lib-books-grid').innerHTML = filtered.map(b => {
+    const pagesRead = Math.floor(b.content.length * b.progress / 100);
+    const badge = b.progress>0&&b.progress<100
+      ? '<div class="lib-book-badge badge-reading">En cours</div>'
+      : b.progress===100
+      ? '<div class="lib-book-badge badge-done">Terminé</div>'
+      : '<div class="lib-book-badge badge-new">Nouveau</div>';
+    const btnCls  = b.progress>0 ? 'btn-read-primary':'btn-read-secondary';
+    const btnText = b.progress>0 ? 'Reprendre →':'Commencer la lecture';
+    return `
+    <div class="lib-book-card" onclick="goToReader('${b.id}')">
+      <div class="lib-book-cover"><span class="lib-book-emoji">${b.icon}</span><span class="lib-book-num">${b.num}</span>${badge}</div>
+      <div class="lib-book-body">
+        <div class="lib-book-title">${b.title}</div>
+        <div class="lib-book-desc">${b.desc}</div>
+        <div class="prog-wrap">
+          <div class="prog-top"><span>${pagesRead} / ${b.content.length} pages</span><span>${b.progress}%</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:${b.progress}%"></div></div>
+        </div>
+        <button class="btn-read ${btnCls}">${btnText}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterLibBooks(cat, btn) {
+  currentFilter = cat;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderLibBooks();
+}
+
+function handleLogout() {
+  currentUser = null;
+  showScreen('public');
+  showToast('À bientôt !','default');
+}
+
+/* ══════════════════════════════════════════
+   RENDU PUBLIC
+══════════════════════════════════════════ */
+function renderPublicBooks() {
+  document.getElementById('books-grid-public').innerHTML = BOOKS.map((b,i) => `
+    <div class="book-card reveal" style="transition-delay:${i*0.08}s" onclick="document.getElementById('forfaits').scrollIntoView({behavior:'smooth'})">
+      <div class="book-cover-wrap">
+        <div class="book-cover-inner">
+          <span class="book-number">${b.num}</span>
+          <div class="book-icon-wrap"><span class="book-icon">${b.icon}</span></div>
+          <div class="book-cover-title">${b.title}</div>
+          <div class="book-cover-author">Michel Boglo</div>
+        </div>
+        <div class="book-lock">🔒 Accès requis</div>
+        <div class="book-overlay"><button class="btn btn-gold" style="font-size:0.72rem;padding:10px 20px;">Obtenir l'accès</button></div>
+      </div>
+      <div class="book-info"><div class="book-title">${b.title}</div><div class="book-desc">${b.desc}</div><span class="book-tag">${b.tag}</span></div>
+    </div>`).join('');
+  observeReveal();
+}
+
+/* ══════════════════════════════════════════
+   PLANS & PAIEMENT
+══════════════════════════════════════════ */
+function renderPlans() {
+  document.getElementById('plans-grid').innerHTML = PLANS.map((p,i) => {
+    const isFeatured = p.featured;
+    const coachingBadge = p.coaching > 0
+      ? `<li><span class="feat-check">✓</span><strong style="color:var(--gold)">${p.coaching} séance${p.coaching>1?'s':''} coaching incluse${p.coaching>1?'s':''}</strong></li>`
+      : '';
+    const communityBadge = p.community
+      ? `<li><span class="feat-check">✓</span>Accès communauté privée</li>` : '';
+    return `
+    <div class="plan-card ${isFeatured?'featured':''} reveal" style="transition-delay:${i*0.1}s">
+      ${isFeatured?'<div class="plan-popular">✦ Le plus populaire</div>':''}
+      <div class="plan-icon">${p.icon}</div>
+      <div class="plan-name">${p.name}</div>
+      <div class="plan-price-wrap">
+        <span class="plan-price">${p.price.toLocaleString('fr-FR')}</span>
+        <span class="plan-currency">FCFA</span>
+      </div>
+      <div class="plan-period">${p.period}</div>
+      <div class="plan-price-annual">&nbsp;</div>
+      <p class="plan-desc">${p.desc}</p>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        ${p.features.map(f=>`<li><span class="feat-check">✓</span>${f}</li>`).join('')}
+      </ul>
+      <button class="btn-plan" onclick="handlePlanSelect('${p.id}')">Choisir ce forfait</button>
+    </div>`;
+  }).join('');
+  observeReveal();
+}
+
+function switchBilling(mode){ /* désactivé — tarifs fixes */ }
+
+function handlePlanSelect(planId){
+  selectedPlan=PLANS.find(p=>p.id===planId);
+  if(!selectedPlan)return;
+  document.getElementById('pay-recap').innerHTML=`
+    <div class="pay-recap-left">
+      <div class="pay-recap-icon">${selectedPlan.icon}</div>
+      <div>
+        <div class="pay-recap-name">${selectedPlan.name}</div>
+        <div class="pay-recap-period">${selectedPlan.period}</div>
+      </div>
+    </div>
+    <div>
+      <span class="pay-recap-price">${selectedPlan.price.toLocaleString('fr-FR')}</span>
+      <span class="pay-recap-currency"> FCFA</span>
+    </div>`;
+  if(currentUser){
+    document.getElementById('pay-name').value=currentUser.name;
+    document.getElementById('pay-email').value=currentUser.email;
+  }
+  setPayStep(1); openModal('modal-payment');
+}
+
+function setPayStep(n){[1,2,3].forEach(i=>{document.getElementById('step-'+i).className='pay-step'+(i===n?' active':i<n?' done':'');});}
+
+function initiateFedaPay(){
+  const name=document.getElementById('pay-name').value.trim();
+  const email=document.getElementById('pay-email').value.trim();
+  let valid=true;
+  if(!name){showFieldError('pay-name-err',true);valid=false;}else showFieldError('pay-name-err',false);
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showFieldError('pay-email-err',true);valid=false;}else showFieldError('pay-email-err',false);
+  if(!valid)return;
+  setPayStep(2);
+  const btn=document.getElementById('btn-pay');
+  btn.disabled=true;btn.textContent='Ouverture du paiement…';
+  const parts=name.split(' ');
+  FedaPay.init({
+    public_key:FEDAPAY_KEY,
+    transaction:{amount:selectedPlan.price,description:'Bibliothèque Génération Leader — '+selectedPlan.name},
+    customer:{firstname:parts[0],lastname:parts.slice(1).join(' ')||parts[0],email},
+    onComplete:async function(resp){
+      btn.disabled=false;btn.textContent='🔒 Payer maintenant';
+      if(resp.reason===FedaPay.DIALOG_DISMISSED){
+        setPayStep(1);showToast('Paiement annulé.','error');
+      } else {
+        setPayStep(3);closeModal('modal-payment');
+
+        const expiry = new Date();
+        expiry.setMonth(expiry.getMonth() + selectedPlan.duration);
+
+        /* Enregistrer l'abonnement dans Supabase */
+        try {
+          let userId = currentUser?.id;
+
+          /* Si pas encore de compte, créer un compte automatique */
+          if (!userId) {
+            const tempPass = Math.random().toString(36).slice(-10) + 'Aa1!';
+            const { data: authData } = await db.auth.signUp({ email, password: tempPass });
+            if (authData?.user) {
+              userId = authData.user.id;
+              await db.from('users').insert({ id: userId, name, email });
+            }
+          }
+
+          if (userId) {
+            await db.from('subscriptions').insert({
+              user_id: userId,
+              plan_id: selectedPlan.id,
+              plan_name: selectedPlan.name,
+              amount: selectedPlan.price,
+              coaching_total: selectedPlan.coaching,
+              coaching_used: 0,
+              community_access: selectedPlan.community,
+              expires_at: expiry.toISOString(),
+              status: 'active'
+            });
+          }
+        } catch(err) {
+          console.warn('Erreur enregistrement abonnement:', err);
+        }
+
+        const expiryStr = expiry.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+        enterLibrary({
+          name, email,
+          plan: selectedPlan.name,
+          planId: selectedPlan.id,
+          coaching: selectedPlan.coaching,
+          coachingUsed: 0,
+          community: selectedPlan.community,
+          expiry: expiryStr
+        });
+        showToast('✦ Accès activé ! Bienvenue dans ta bibliothèque.','success');
+      }
+    }
+  }).open();
+}
+
+/* ══════════════════════════════════════════
+   AUTH — SUPABASE RÉEL
+══════════════════════════════════════════ */
+function openAuth(tab){switchAuthTab(tab);openModal('modal-auth');}
+
+function switchAuthTab(tab){
+  document.getElementById('tab-login').classList.toggle('active',tab==='login');
+  document.getElementById('tab-register').classList.toggle('active',tab==='register');
+  document.getElementById('form-login').style.display=tab==='login'?'block':'none';
+  document.getElementById('form-register').style.display=tab==='register'?'block':'none';
+  document.getElementById('auth-title').textContent=tab==='login'?'Bienvenue':'Créer un compte';
+  document.getElementById('auth-sub').textContent=tab==='login'?'Connecte-toi pour accéder à ta bibliothèque.':'Rejoins la bibliothèque Génération Leader.';
+}
+
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  let valid = true;
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showFieldError('login-email-err',true); valid=false; } else showFieldError('login-email-err',false);
+  if (!pass) { showFieldError('login-pass-err',true); valid=false; } else showFieldError('login-pass-err',false);
+  if (!valid) return;
+
+  const btn = document.querySelector('#form-login .btn-modal-primary');
+  btn.disabled = true; btn.textContent = 'Connexion…';
+
+  try {
+    /* 1. Connexion Supabase Auth */
+    const { data: authData, error: authErr } = await db.auth.signInWithPassword({ email, password: pass });
+    if (authErr) throw new Error('Email ou mot de passe incorrect.');
+
+    /* 2. Récupérer les infos utilisateur */
+    const { data: userData, error: userErr } = await db
+      .from('users').select('*').eq('id', authData.user.id).single();
+    if (userErr) throw new Error('Impossible de récupérer ton profil.');
+
+    /* 3. Récupérer l'abonnement actif */
+    const { data: subData } = await db
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', authData.user.id)
+      .eq('status', 'active')
+      .gte('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    closeModal('modal-auth');
+
+    if (!subData) {
+      /* Compte sans abonnement actif */
+      currentUser = { name: userData.name, email, plan: null, planId: null, coaching: 0, coachingUsed: 0, community: false };
+      enterLibrary(currentUser);
+      showToast('Connecté. Choisis un forfait pour accéder aux contenus.', 'default');
+      setTimeout(() => document.getElementById('forfaits')?.scrollIntoView({ behavior:'smooth' }), 600);
+    } else {
+      const expiry = new Date(subData.expires_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+      currentUser = {
+        id: authData.user.id,
+        name: userData.name, email,
+        plan: subData.plan_name, planId: subData.plan_id,
+        coaching: subData.coaching_total,
+        coachingUsed: subData.coaching_used,
+        community: subData.community_access,
+        expiry
+      };
+      await loadReadingProgress();
+      enterLibrary(currentUser);
+      showToast('✦ Connecté avec succès. Bonne lecture !', 'success');
+    }
+  } catch(err) {
+    showToast(err.message || 'Erreur de connexion.', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Accéder à ma bibliothèque →';
+  }
+}
+
+async function handleRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass  = document.getElementById('reg-password').value;
+  let valid = true;
+  if (!name)  { showFieldError('reg-name-err',true); valid=false; } else showFieldError('reg-name-err',false);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showFieldError('reg-email-err',true); valid=false; } else showFieldError('reg-email-err',false);
+  if (!pass || pass.length < 8) { showFieldError('reg-pass-err',true); valid=false; } else showFieldError('reg-pass-err',false);
+  if (!valid) return;
+
+  const btn = document.querySelector('#form-register .btn-modal-primary');
+  btn.disabled = true; btn.textContent = 'Création…';
+
+  try {
+    /* 1. Créer le compte Supabase Auth */
+    const { data: authData, error: authErr } = await db.auth.signUp({ email, password: pass });
+    if (authErr) throw new Error(authErr.message === 'User already registered' ? 'Cet email est déjà utilisé.' : authErr.message);
+
+    /* 2. Insérer dans la table users */
+    const { error: insertErr } = await db.from('users').insert({
+      id: authData.user.id, name, email
+    });
+    if (insertErr && !insertErr.message.includes('duplicate')) throw new Error('Erreur lors de la création du profil.');
+
+    currentUser = { id: authData.user.id, name, email, plan: null, planId: null, coaching: 0, coachingUsed: 0, community: false };
+    closeModal('modal-auth');
+    showToast('✦ Compte créé ! Choisis ton forfait pour accéder aux contenus.', 'success');
+    setTimeout(() => document.getElementById('forfaits').scrollIntoView({ behavior:'smooth' }), 400);
+  } catch(err) {
+    showToast(err.message || 'Erreur lors de la création du compte.', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Créer mon compte →';
+  }
+}
+
+async function handleLogout() {
+  await db.auth.signOut();
+  currentUser = null;
+  showScreen('public');
+  showToast('À bientôt !', 'default');
+}
+
+/* ── Charger progressions depuis Supabase ── */
+async function loadReadingProgress() {
+  if (!currentUser?.id) return;
+  const { data } = await db.from('reading_progress')
+    .select('*').eq('user_id', currentUser.id);
+  if (!data) return;
+  data.forEach(row => {
+    const book = BOOKS.find(b => b.id === row.book_id);
+    if (book) {
+      book.progress = row.progress_pct;
+      localStorage.setItem('progress_' + book.id, row.page);
+    }
+  });
+}
+
+/* ── Sauvegarder progression dans Supabase ── */
+async function saveProgressRemote() {
+  if (!currentUser?.id || !readerBook) return;
+  const pct = readerBook.content.length > 1
+    ? Math.round((readerPage / (readerBook.content.length - 1)) * 100) : 100;
+  await db.from('reading_progress').upsert({
+    user_id: currentUser.id,
+    book_id: readerBook.id,
+    page: readerPage,
+    progress_pct: pct,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id,book_id' });
+}
+
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+function handleOverlayClick(e,id){if(e.target.id===id)closeModal(id);}
+function showFieldError(id,show){const el=document.getElementById(id);const inp=el.previousElementSibling;el.classList.toggle('show',show);inp.classList.toggle('error',show);}
+function showToast(msg,type='default'){
+  const wrap=document.getElementById('toast-wrap');
+  const t=document.createElement('div');
+  t.className=`toast toast-${type}`;
+  t.innerHTML=`<span class="toast-dot"></span><span>${msg}</span>`;
+  wrap.appendChild(t);
+  requestAnimationFrame(()=>{requestAnimationFrame(()=>t.classList.add('show'));});
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),400);},3800);
+}
+function observeReveal(){
+  const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});},{threshold:0.1});
+  document.querySelectorAll('.reveal:not(.visible)').forEach(el=>obs.observe(el));
+}
+function animateCounters(){
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(!e.isIntersecting)return;
+      const el=e.target,target=+el.dataset.target;
+      let cur=0;const step=target/(1200/16);
+      const t=setInterval(()=>{cur=Math.min(cur+step,target);el.textContent=Math.floor(cur);if(cur>=target)clearInterval(t);},16);
+      obs.unobserve(el);
+    });
+  },{threshold:0.5});
+  document.querySelectorAll('[data-target]').forEach(el=>obs.observe(el));
+}
+
+/* ─── INIT ─── */
+document.addEventListener('DOMContentLoaded', async () => {
+  renderPublicBooks();
+  renderPlans();
+  animateCounters();
+  observeReveal();
+
+  /* Vérifier si une session Supabase est déjà active */
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    try {
+      const { data: userData } = await db.from('users')
+        .select('*').eq('id', session.user.id).single();
+
+      const { data: subData } = await db.from('subscriptions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'active')
+        .gte('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (userData && subData) {
+        const expiry = new Date(subData.expires_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+        currentUser = {
+          id: session.user.id,
+          name: userData.name,
+          email: userData.email,
+          plan: subData.plan_name,
+          planId: subData.plan_id,
+          coaching: subData.coaching_total,
+          coachingUsed: subData.coaching_used,
+          community: subData.community_access,
+          expiry
+        };
+        await loadReadingProgress();
+        enterLibrary(currentUser);
+        showToast('✦ Bon retour ' + currentUser.name.split(' ')[0] + ' !', 'success');
+      }
+    } catch(e) {
+      /* Pas de session valide — rester sur la page publique */
+    }
+  }
+});
+</script>
+</body>
+</html>
